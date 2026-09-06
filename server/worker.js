@@ -1,0 +1,104 @@
+// MeWork Cloudflare Worker — API + Access 鉴权 + Cron
+// 浏览器只调用 authenticated API；GitHub / Google 凭据只存在 Worker secret，永不下发到前端。
+import { handleApi } from './api.js';
+import { GitHubStore } from './github-store.js';
+import { GoogleCalendar } from './google.js';
+import { syncBoardToCalendar, fetchProjection } from './sync.js';
+import { runWeeklyPlan, writeBriefing, jstDate } from './briefing.js';
+
+// ---- Cloudflare Access JWT 校验 ----
+let jwksCache = { keys: null, exp: 0 };
+async function getJwks(teamDomain) {
+  if (jwksCache.keys && Date.now() < jwksCache.exp) return jwksCache.keys;
+  const res = await fetch(`https://${teamDomain}/cdn-cgi/access/certs`);
+  if (!res.ok) throw new Error('jwks fetch failed');
+  const j = await res.json();
+  jwksCache = { keys: j.keys, exp: Date.now() + 3600_000 };
+  return j.keys;
+}
+const b64u = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '=')), (c) => c.charCodeAt(0));
+
+async function verifyAccess(request, env) {
+  if (env.DEV_BYPASS_AUTH === '1') return { email: 'dev@localhost' };
+  const token = request.headers.get('cf-access-jwt-assertion');
+  if (!token) return null;
+  const [h, p, s] = token.split('.');
+  if (!h || !p || !s) return null;
+  const header = JSON.parse(new TextDecoder().decode(b64u(h)));
+  const payload = JSON.parse(new TextDecoder().decode(b64u(p)));
+  if (payload.aud && !(Array.isArray(payload.aud) ? payload.aud : [payload.aud]).includes(env.ACCESS_AUD)) return null;
+  if (payload.exp && Date.now() / 1000 > payload.exp) return null;
+  const jwk = (await getJwks(env.ACCESS_TEAM_DOMAIN)).find((k) => k.kid === header.kid);
+  if (!jwk) return null;
+  const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+  const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64u(s), new TextEncoder().encode(`${h}.${p}`));
+  if (!ok) return null;
+  if (env.ALLOWED_EMAIL && payload.email !== env.ALLOWED_EMAIL) return null;
+  return { email: payload.email };
+}
+
+const storeOf = (env) => new GitHubStore({ token: env.GITHUB_TOKEN, owner: env.GITHUB_OWNER, repo: env.GITHUB_REPO, branch: env.GITHUB_BRANCH || 'main' });
+const gcalOf = (env) => (env.GOOGLE_REFRESH_TOKEN
+  ? new GoogleCalendar({ clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET, refreshToken: env.GOOGLE_REFRESH_TOKEN })
+  : null);
+
+const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
+
+    const user = await verifyAccess(request, env);
+    if (!user) return json(401, { error: '未登录或无权访问（Cloudflare Access）' });
+
+    const store = storeOf(env);
+
+    // 日历：只读投影
+    if (url.pathname === '/api/calendar/today' && request.method === 'GET') {
+      const gcal = gcalOf(env);
+      if (!gcal) return json(200, { enabled: false, events: [] });
+      const from = url.searchParams.get('from') || jstDate();
+      const to = url.searchParams.get('to') || jstDate(new Date(Date.now() + 7 * 864e5));
+      try { return json(200, { enabled: true, events: await fetchProjection(gcal, from, to) }); }
+      catch (e) { return json(200, { enabled: true, events: [], error: String(e.message || e) }); }
+    }
+    // 日历：手动触发写回
+    if (url.pathname === '/api/calendar/sync' && request.method === 'POST') {
+      const gcal = gcalOf(env);
+      if (!gcal) return json(400, { error: 'Calendar 未启用（缺 GOOGLE_REFRESH_TOKEN）' });
+      return json(200, await syncBoardToCalendar(store, gcal, { dryRun: url.searchParams.get('dry') === '1' }));
+    }
+
+    const raw = ['POST', 'PUT', 'PATCH'].includes(request.method) ? new Uint8Array(await request.arrayBuffer()) : null;
+    let body = null;
+    if (raw?.length && (request.headers.get('content-type') || '').includes('json')) {
+      try { body = JSON.parse(new TextDecoder().decode(raw)); }
+      catch { return json(400, { error: 'invalid json' }); }
+    }
+    const out = await handleApi(store, request.method, url.pathname, Object.fromEntries(url.searchParams), body, raw);
+    if (out.raw) return new Response(out.raw, { status: out.status, headers: { 'content-type': out.contentType, 'cache-control': 'no-store' } });
+
+    // 写操作成功后顺带同步日历，不阻塞响应
+    if (out.status < 300 && ['POST', 'PATCH'].includes(request.method) && url.pathname.startsWith('/api/tasks')) {
+      const gcal = gcalOf(env);
+      if (gcal) ctx.waitUntil(syncBoardToCalendar(store, gcal).catch(() => { }));
+    }
+    return json(out.status, out.json);
+  },
+
+  async scheduled(event, env, ctx) {
+    const store = storeOf(env);
+    const date = jstDate();
+    const jstHour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tokyo', hour: '2-digit', hour12: false }).format(new Date()));
+    const jstDow = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Tokyo', weekday: 'short' }).format(new Date());
+
+    const tasks = [];
+    // 每天 07:30 JST：先落一份只含「今日待办」的简报骨架，研究正文由定时 Claude 代理补写
+    if (jstHour === 7) tasks.push(writeBriefing(store, date, {}).catch(() => { }));
+    if (jstDow === 'Fri' && jstHour === 17) tasks.push(runWeeklyPlan(store, date)); // 周五 17:00 JST
+    const gcal = gcalOf(env);
+    if (gcal) tasks.push(syncBoardToCalendar(store, gcal));
+    ctx.waitUntil(Promise.allSettled(tasks));
+  },
+};

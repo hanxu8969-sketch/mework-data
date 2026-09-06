@@ -1,0 +1,16 @@
+{
+  "artifacts": [
+    {
+      "id": "art_g001",
+      "label": "TGS2026 会前清单",
+      "kind": "note",
+      "path": "content/projects/prj_game/artifacts/tgs2026-checklist.md",
+      "project_id": "prj_game",
+      "task_id": "tsk_g002",
+      "visibility": "private",
+      "size": null,
+      "created_at": "2026-09-01T09:10:00+09:00",
+      "updated_at": "2026-09-01T09:10:00+09:00"
+    }
+  ]
+}

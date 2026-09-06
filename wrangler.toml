@@ -1,0 +1,27 @@
+name = "mework"
+main = "server/worker.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+
+# JST 07:30 每日简报；JST 周五 17:00 下周优先任务；其余整点做日历对账
+# Cron 用 UTC：JST = UTC+9 → 07:30 JST = 22:30 UTC(前一日)；17:00 JST 周五 = 08:00 UTC 周五
+[triggers]
+crons = ["30 22 * * *", "0 8 * * 5", "0 */3 * * *"]
+
+[vars]
+GITHUB_OWNER = "REPLACE_ME"
+GITHUB_REPO = "mework-data"
+GITHUB_BRANCH = "main"
+ACCESS_TEAM_DOMAIN = "REPLACE_ME.cloudflareaccess.com"
+ACCESS_AUD = "REPLACE_ME"
+ALLOWED_EMAIL = "hanxu8969@gmail.com"
+
+# secrets（用 `wrangler secret put <NAME>` 由你本人输入，绝不写进仓库或聊天）：
+#   GITHUB_TOKEN            — 只对数据仓库有 contents:write 的 fine-grained PAT
+#   GOOGLE_CLIENT_ID
+#   GOOGLE_CLIENT_SECRET
+#   GOOGLE_REFRESH_TOKEN    — 不设则 Calendar 整段不启用，且不创建任何 Calendar 资源
