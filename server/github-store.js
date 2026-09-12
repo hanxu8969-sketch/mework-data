@@ -1,6 +1,22 @@
 // GitHub canonical store provider — 与 FsStore 同接口；revision = blob SHA
 const API = 'https://api.github.com';
 
+// 把 GitHub 的失败翻译成能直接指向修复动作的中文，绝不回显 token
+async function ghError(res, what) {
+  let detail = '';
+  try { detail = ((await res.json()).message || '').slice(0, 120); } catch { }
+  const hint = {
+    401: 'GITHUB_TOKEN 无效或粘贴出错（重新 wrangler secret put）',
+    403: 'token 有效但无权限：检查 fine-grained token 的 Contents 是否为 Read and write，且仓库范围勾了本仓库',
+    404: '仓库或分支不存在，或 token 看不到该仓库',
+    409: '版本冲突',
+  }[res.status] || 'GitHub 返回异常';
+  return Object.assign(
+    new Error(`GitHub ${what} 失败 ${res.status}：${hint}${detail ? `（${detail}）` : ''}`),
+    { code: res.status === 401 || res.status === 403 ? 401 : 500 },
+  );
+}
+
 export class GitHubStore {
   constructor({ token, owner, repo, branch = 'main' }) {
     Object.assign(this, { token, owner, repo, branch });
@@ -17,7 +33,7 @@ export class GitHubStore {
     const url = `${API}/repos/${this.owner}/${this.repo}/contents/${encodeURI(rel)}?ref=${this.branch}`;
     const res = await fetch(url, { headers: this.headers });
     if (res.status === 404) return null;
-    if (!res.ok) throw Object.assign(new Error(`github read ${res.status}`), { code: res.status === 401 || res.status === 403 ? 401 : 500 });
+    if (!res.ok) throw await ghError(res, `read ${rel}`);
     const j = await res.json();
     const content = Uint8Array.from(atob(j.content.replace(/\n/g, '')), (c) => c.charCodeAt(0));
     return { path: rel, content, revision: j.sha, text: new TextDecoder().decode(content) };
@@ -40,7 +56,7 @@ export class GitHubStore {
       method: 'PUT', headers: { ...this.headers, 'content-type': 'application/json' }, body: JSON.stringify(body),
     });
     if (res.status === 409 || res.status === 422) throw Object.assign(new Error('stale revision'), { code: 409 });
-    if (!res.ok) throw Object.assign(new Error(`github write ${res.status}: ${await res.text()}`), { code: 500 });
+    if (!res.ok) throw await ghError(res, `write ${rel}`);
     const back = await this.read(rel); // exact read-back
     if (!back) throw Object.assign(new Error('read-back missing'), { code: 500 });
     const same = back.content.length === bytes.length && back.content.every((v, i) => v === bytes[i]);
@@ -50,7 +66,7 @@ export class GitHubStore {
   async list(relDir) {
     const res = await fetch(`${API}/repos/${this.owner}/${this.repo}/contents/${encodeURI(relDir)}?ref=${this.branch}`, { headers: this.headers });
     if (res.status === 404) return [];
-    if (!res.ok) throw Object.assign(new Error(`github list ${res.status}`), { code: 500 });
+    if (!res.ok) throw await ghError(res, `list ${relDir}`);
     const j = await res.json();
     return (Array.isArray(j) ? j : []).map((e) => ({ name: e.name, dir: e.type === 'dir' }));
   }

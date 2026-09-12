@@ -16,8 +16,8 @@ crons = ["30 22 * * *", "0 8 * * 5", "0 */3 * * *"]
 GITHUB_OWNER = "hanxu8969-sketch"
 GITHUB_REPO = "mework-data"
 GITHUB_BRANCH = "main"
-ACCESS_TEAM_DOMAIN = "REPLACE_ME.cloudflareaccess.com"
-ACCESS_AUD = "REPLACE_ME"
+ACCESS_TEAM_DOMAIN = "frosty-violet-c643.cloudflareaccess.com"
+ACCESS_AUD = "8fdd40f4d59f7bcddba73b5000ec08dcf8dc74690ac751eaf152dac4d8948348"
 ALLOWED_EMAIL = "hanxu8969@gmail.com"
 
 # secrets（用 `wrangler secret put <NAME>` 由你本人输入，绝不写进仓库或聊天）：
