@@ -28,6 +28,27 @@ const server = http.createServer(async (req, res) => {
       }
       const q = Object.fromEntries(url.searchParams);
       const out = await handleApi(store, req.method, url.pathname, q, json, raw);
+      // 本地也合并 Trello：有 TRELLO_KEY 就拉真实数据，否则用 fixture（便于离线开发）
+      if (url.pathname === '/api/bootstrap' && out.status === 200) {
+        try {
+          const { fetchTrello, projectTrello, summarize } = await import('./trello.js');
+          const { jstDate } = await import('./briefing.js');
+          let boards = await fetchTrello(process.env);
+          if (!boards) {
+            const fx = path.join(root, 'server', 'trello-fixture.json');
+            boards = await fs.readFile(fx, 'utf8').then(JSON.parse).catch(() => null);
+          }
+          if (boards) {
+            const tp = projectTrello(boards, jstDate());
+            out.json.projects = [...tp, ...out.json.projects];
+            out.json.trello = { enabled: true, ...summarize(tp) };
+          } else {
+            out.json.trello = { enabled: false, total: 0, lanes: [] };
+          }
+        } catch (e) {
+          out.json.trello = { enabled: true, error: String(e.message || e), total: 0, lanes: [] };
+        }
+      }
       if (out.raw) return send(out.status, out.raw, out.contentType);
       return send(out.status, JSON.stringify(out.json));
     }

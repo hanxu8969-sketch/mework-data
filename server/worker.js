@@ -6,6 +6,7 @@ import { GoogleCalendar } from './google.js';
 import { syncBoardToCalendar, fetchProjection } from './sync.js';
 import { runWeeklyPlan, writeBriefing, readBriefing, jstDate } from './briefing.js';
 import { pushAll, saveSubscription, removeSubscription } from './push.js';
+import { fetchTrello, projectTrello, summarize } from './trello.js';
 
 // ---- Cloudflare Access JWT 校验 ----
 let jwksCache = { keys: null, exp: 0 };
@@ -95,6 +96,27 @@ export default {
       try { body = JSON.parse(new TextDecoder().decode(raw)); }
       catch { return json(400, { error: 'invalid json' }); }
     }
+    // bootstrap 合并 Trello（只读投影）；Trello 挂了不影响 MeWork 自身数据
+    if (url.pathname === '/api/bootstrap' && request.method === 'GET') {
+      const base = await handleApi(store, 'GET', '/api/bootstrap', {}, null, null);
+      if (base.status === 200) {
+        try {
+          const boards = await fetchTrello(env);
+          if (boards) {
+            const today = jstDate();
+            const tp = projectTrello(boards, today);
+            base.json.projects = [...tp, ...base.json.projects];
+            base.json.trello = { enabled: true, ...summarize(tp) };
+          } else {
+            base.json.trello = { enabled: false, total: 0, lanes: [] };
+          }
+        } catch (e) {
+          base.json.trello = { enabled: true, error: String(e.message || e), total: 0, lanes: [] };
+        }
+      }
+      return json(base.status, base.json);
+    }
+
     const out = await handleApi(store, request.method, url.pathname, Object.fromEntries(url.searchParams), body, raw);
     if (out.raw) return new Response(out.raw, { status: out.status, headers: { 'content-type': out.contentType, 'cache-control': 'no-store' } });
 

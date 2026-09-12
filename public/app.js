@@ -45,21 +45,56 @@ async function load() {
 // 极简 markdown → HTML（只支持简报用到的语法）
 function md(src) {
   const lines = String(src || '').split('\n');
-  const out = []; let inList = false;
+  const out = [];
+  let inList = false, inQuote = false, table = null;
   const inline = (s) => esc(s)
     .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-    .replace(/_(.+?)_/g, '<i>$1</i>')
+    .replace(/(^|[\s(])_(.+?)_(?=[\s).,，。]|$)/g, '$1<i>$2</i>')
     .replace(/`(.+?)`/g, '<code>$1</code>')
     .replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const closeList = () => { if (inList) { out.push('</ul>'); inList = false; } };
+  const closeQuote = () => { if (inQuote) { out.push('</blockquote>'); inQuote = false; } };
+  const closeTable = () => {
+    if (!table) return;
+    const [head, ...rows] = table;
+    out.push('<div class="tw"><table><thead><tr>'
+      + head.map((c) => `<th>${inline(c)}</th>`).join('')
+      + '</tr></thead><tbody>'
+      + rows.map((r) => '<tr>' + r.map((c) => `<td>${inline(c)}</td>`).join('') + '</tr>').join('')
+      + '</tbody></table></div>');
+    table = null;
+  };
+  const cells = (ln) => ln.replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+
   for (const ln of lines) {
+    // 表格：| a | b |，第二行是 |---|---| 分隔线
+    if (/^\s*\|.*\|\s*$/.test(ln)) {
+      closeList(); closeQuote();
+      if (/^\s*\|[\s:|-]+\|\s*$/.test(ln)) continue; // 分隔行丢弃
+      if (!table) table = [cells(ln)]; else table.push(cells(ln));
+      continue;
+    }
+    closeTable();
+
+    const q = ln.match(/^\s*>\s?(.*)$/);
+    if (q) {
+      closeList();
+      if (!inQuote) { out.push('<blockquote>'); inQuote = true; }
+      if (q[1].trim()) out.push(`<p>${inline(q[1])}</p>`);
+      continue;
+    }
+    closeQuote();
+
     const li = ln.match(/^\s*[-*]\s+(?:\[[ x]\]\s+)?(.*)$/);
     if (li) { if (!inList) { out.push('<ul>'); inList = true; } out.push(`<li>${inline(li[1])}</li>`); continue; }
-    if (inList) { out.push('</ul>'); inList = false; }
+    closeList();
+
+    if (/^\s*---+\s*$/.test(ln)) { out.push('<hr>'); continue; }
     const h = ln.match(/^(#{1,4})\s+(.*)$/);
     if (h) { out.push(`<h${h[1].length + 1}>${inline(h[2])}</h${h[1].length + 1}>`); continue; }
     if (ln.trim()) out.push(`<p>${inline(ln)}</p>`);
   }
-  if (inList) out.push('</ul>');
+  closeTable(); closeQuote(); closeList();
   return out.join('');
 }
 
@@ -102,6 +137,9 @@ function upsertTask(rec, revision) {
 }
 const allTasks = () => S.data ? S.data.projects.flatMap((p) => p.tasks.map((t) => ({ ...t, _project: p }))) : [];
 const activeProjects = () => S.data ? S.data.projects.filter((p) => p.status === 'active') : [];
+// Trello 是只读镜像；MeWork 自己的项目才可写
+const trelloLanes = () => S.data ? S.data.projects.filter((p) => p.source === 'trello') : [];
+const ownProjects = () => S.data ? S.data.projects.filter((p) => p.source !== 'trello' && p.status === 'active') : [];
 
 // ---------- shared: complete / reopen ----------
 async function toggleDone(t) {
@@ -150,6 +188,64 @@ function taskRow(t) {
 }
 function esc(s) { const d = document.createElement('span'); d.textContent = s ?? ''; return d.innerHTML; }
 
+// Trello 区：按列表分组的未完成卡片。只读——所有编辑都回 Trello 做。
+function renderTrelloSection(el) {
+  const tr = S.data?.trello;
+  if (!tr) return;
+  const today = todayStr();
+  const box = document.createElement('section'); box.className = 'trello';
+
+  if (tr.error) {
+    box.innerHTML = `<div class="tl-head"><b>📋 Trello</b><span class="badge warn">读取失败</span></div>
+      <div class="tl-err">${esc(tr.error)}</div>`;
+    el.appendChild(box); return;
+  }
+  if (!tr.enabled) {
+    box.innerHTML = `<div class="tl-head"><b>📋 Trello</b><span class="badge">未连接</span></div>
+      <div class="tl-err" style="color:var(--muted)">配置 TRELLO_KEY / TRELLO_TOKEN 后，你的 Trello 卡片会在这里按列表显示。</div>`;
+    el.appendChild(box); return;
+  }
+
+  const lanes = trelloLanes().filter((p) => !p.is_done_lane && p.open_count > 0);
+  box.innerHTML = `<div class="tl-head">
+      <b>📋 未完成合计 ${tr.total} 项</b>
+      <span class="badge">来自 Trello · 只读</span>
+    </div>`;
+  const wrap = document.createElement('div'); wrap.className = 'tl-lanes';
+
+  if (!lanes.length) {
+    wrap.innerHTML = '<div class="state-box">Trello 里没有未完成的卡片 ✓</div>';
+  }
+  for (const p of lanes) {
+    const lane = document.createElement('div'); lane.className = 'tl-lane';
+    const open = localStorage.getItem('mw-lane-' + p.id) === '1';
+    lane.innerHTML = `<div class="tl-lane-h" role="button" tabindex="0">
+        <span class="tl-caret">${open ? '▾' : '▸'}</span>
+        <b>${esc(p.title)}</b>
+        <span class="badge">${p.open_count}</span>
+        <span class="tl-board">${esc(p.board)}</span>
+      </div>
+      <div class="tl-cards" ${open ? '' : 'hidden'}>${p.tasks.filter((t) => t.status !== 'done').map((t) => `
+        <a class="tl-card" href="${esc(t.url)}" target="_blank" rel="noopener">
+          <span class="tl-dot ${t.due && t.due < today ? 'over' : ''}"></span>
+          <span class="tl-name">${esc(t.title)}</span>
+          ${t.due ? `<span class="badge ${t.due < today ? 'due-over' : ''}">${fmtMd(t.due)}</span>` : ''}
+          ${(t.labels || []).slice(0, 2).map((l) => `<span class="badge">${esc(l)}</span>`).join('')}
+        </a>`).join('')}</div>`;
+    const h = $('.tl-lane-h', lane), body = $('.tl-cards', lane);
+    const toggle = () => {
+      body.hidden = !body.hidden;
+      $('.tl-caret', lane).textContent = body.hidden ? '▸' : '▾';
+      try { localStorage.setItem('mw-lane-' + p.id, body.hidden ? '0' : '1'); } catch { }
+    };
+    h.onclick = toggle;
+    h.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
+    wrap.appendChild(lane);
+  }
+  box.appendChild(wrap);
+  el.appendChild(box);
+}
+
 function renderToday(el) {
   el.innerHTML = '';
   const today = todayStr(), wend = weekEnd();
@@ -157,12 +253,14 @@ function renderToday(el) {
   pr.className = 'push-row'; pr.id = 'push-row'; pr.hidden = true;
   el.appendChild(pr);
   renderPushRow();
+  // 顺序即优先级：先要做的事（Trello），再阅读材料（简报）
+  renderTrelloSection(el);
   renderBriefingPanel(el);
   // quick create
   const qc = document.createElement('div'); qc.className = 'quick';
   qc.innerHTML = `
     <input type="text" id="qc-title" placeholder="快速创建：只需输入标题，回车即建（默认今天到期）" aria-label="新任务标题">
-    <select id="qc-proj" aria-label="所属项目">${activeProjects().map((p) => `<option value="${p.id}">${esc(p.title)}</option>`).join('')}</select>
+    <select id="qc-proj" aria-label="所属项目">${ownProjects().map((p) => `<option value="${p.id}">${esc(p.title)}</option>`).join('')}</select>
     <button class="btn" id="qc-go">＋ 创建</button>`;
   el.appendChild(qc);
   const create = async () => {
@@ -180,7 +278,7 @@ function renderToday(el) {
 
   // project one-line progress
   const strip = document.createElement('div'); strip.className = 'pstrip';
-  for (const p of activeProjects()) {
+  for (const p of ownProjects()) {
     const open = p.tasks.filter((t) => t.status !== 'done');
     const doing = open.filter((t) => t.status === 'doing').length;
     const over = open.filter((t) => t.due && t.due < today).length;
@@ -191,7 +289,8 @@ function renderToday(el) {
   }
   el.appendChild(strip);
 
-  const ts = allTasks().filter((t) => t._project.status === 'active');
+  // Trello 卡片有自己的区块，这里只列 MeWork 自身的任务，避免同一条出现两次
+  const ts = allTasks().filter((t) => t._project.status === 'active' && t._project.source !== 'trello');
   const overdue = sortTasks(ts.filter((t) => t.status !== 'done' && t.due && t.due < today));
   const todays = sortTasks(ts.filter((t) => t.due === today && t.status !== 'done'));
   const week = sortTasks(ts.filter((t) => t.status !== 'done' && t.due && t.due > today && t.due <= wend));
@@ -259,19 +358,21 @@ function renderTimeline(el) {
     inner.appendChild(line);
   }
 
-  for (const p of activeProjects()) {
+  // Timeline 只放有日期的东西；Trello 卡片多数没有 due，只有设了 due 的才会出现
+  const timelineProjects = activeProjects().filter((p) => p.source !== 'trello' || p.tasks.some((t) => t.due));
+  for (const p of timelineProjects) {
     const ph = document.createElement('div'); ph.className = 'tl-proj-h';
     const closed = S.collapsed.has(p.id);
     ph.innerHTML = `<div class="ph-inner"><span>${closed ? '▸' : '▾'}</span> ${esc(p.title)} <span class="count" style="color:var(--muted);font-weight:400">${p.tasks.filter((t) => t.status !== 'done').length} 未完成</span></div>`;
     ph.onclick = () => { closed ? S.collapsed.delete(p.id) : S.collapsed.add(p.id); render(); };
     inner.appendChild(ph);
     if (closed) continue;
-    const lanes = sortTasks([...p.tasks.map((t) => ({ ...t, _project: p }))]);
+    const lanes = sortTasks([...p.tasks.map((t) => ({ ...t, _project: p }))]).filter((t) => !(p.source === 'trello' && !t.due));
     for (const t of lanes) {
       const row = document.createElement('div'); row.className = 'tl-row';
       const lab = document.createElement('div'); lab.className = 'rowlabel';
       lab.style.width = LABEL_W + 'px'; lab.textContent = t.title; lab.title = t.title;
-      lab.onclick = () => openDrawer(t.id, t.project_id);
+      lab.onclick = () => (t.read_only ? window.open(t.url, '_blank', 'noopener') : openDrawer(t.id, t.project_id));
       row.appendChild(lab);
       row.ondblclick = (e) => {
         if (e.target !== row) return;
@@ -311,12 +412,23 @@ function renderTimeline(el) {
 
 function makeBar(t, start, due) {
   const bar = document.createElement('div');
-  bar.className = 'tl-bar' + (t.status === 'done' ? ' done' : t.status === 'blocked' ? ' blocked' : '');
+  bar.className = 'tl-bar' + (t.status === 'done' ? ' done' : t.status === 'blocked' ? ' blocked' : '') + (t.read_only ? ' ro' : '');
   bar.tabIndex = 0;
   bar.setAttribute('aria-label', `${t.title} ${start} 至 ${due}`);
   const i0 = diffDays(S.tlStart, start), i1 = diffDays(S.tlStart, due);
   bar.style.left = LABEL_W + i0 * COL + 2 + 'px';
   bar.style.width = Math.max(1, i1 - i0 + 1) * COL - 4 + 'px';
+
+  // Trello 卡片只读：不给勾选框、不给缩放手柄、不能拖动，点击回 Trello
+  if (t.read_only) {
+    bar.innerHTML = `<span>📋 ${esc(t.title)}</span>`;
+    bar.title = `${t.title}（Trello · 点击打开）`;
+    const open = () => window.open(t.url, '_blank', 'noopener');
+    bar.onclick = open;
+    bar.onkeydown = (e) => { if (e.key === 'Enter') open(); };
+    return bar;
+  }
+
   bar.innerHTML = `<button class="bchk ${t.status === 'done' ? 'on' : ''}" aria-label="完成/重开"></button><span>${esc(t.title)}</span><div class="h l"></div><div class="h r"></div>`;
   $('.bchk', bar).onclick = (e) => { e.stopPropagation(); toggleDone(t); };
   bar.onkeydown = (e) => {

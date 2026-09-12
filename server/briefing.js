@@ -47,14 +47,14 @@ export function renderAgenda(a) {
  *   { game: '<markdown>', ai: '<markdown>' }
  * 缺任一块时如实标注"未生成"，绝不用占位内容冒充结果。
  */
+// 简报只放两份 report。待办由 Trello 驱动、经推送与首页呈现，
+// 不在这里重复一份 —— 两处数据源不同，重复只会对不上。
 export function renderBriefing(date, agenda, research = {}) {
   const meta = {
     date,
     generated_at: new Date().toISOString(),
     has_game_report: !!research.game,
     has_ai_report: !!research.ai,
-    overdue_count: agenda.overdue.length,
-    today_count: agenda.today.length,
   };
   const body = [
     `# ${date} 每日简报`,
@@ -64,9 +64,6 @@ export function renderBriefing(date, agenda, research = {}) {
     '',
     '## 🤖 AI 市场 report',
     research.ai || '_本次未生成（研究步骤失败或未运行）。_',
-    '',
-    '## ✅ 今天的待办提醒',
-    renderAgenda(agenda),
   ].join('\n');
   return serializeDoc(meta, body);
 }

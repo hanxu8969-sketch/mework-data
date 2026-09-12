@@ -1,0 +1,47 @@
+[
+  {
+    "id": "b_work",
+    "name": "⋈仕事",
+    "shortUrl": "https://trello.com/b/Kk3wmYNO",
+    "lists": [
+      { "id": "l_tgs", "name": "TGS2026" },
+      { "id": "l_new", "name": "【新規開拓】" },
+      { "id": "l_nada", "name": "【NADA】" },
+      { "id": "l_goal", "name": "目標設定" }
+    ],
+    "cards": [
+      { "id": "c1", "name": "アテンドスケジュール", "idList": "l_tgs", "due": null, "dueComplete": false, "desc": "![image.webp](https://trello.com/x.webp)", "labels": [], "shortUrl": "https://trello.com/c/9p2joNLq", "dateLastActivity": "2026-08-19T00:00:38.401Z" },
+      { "id": "c2", "name": "ロリポップチェーンソー Back 2 Back", "idList": "l_tgs", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/lp", "dateLastActivity": "2026-09-05T00:00:00.000Z" },
+      { "id": "c3", "name": "WBチケット", "idList": "l_tgs", "due": "2026-09-10T09:00:00.000Z", "dueComplete": false, "desc": "ビジネスディ×2枚", "labels": [{ "color": "red", "name": "" }], "shortUrl": "https://trello.com/c/wb", "dateLastActivity": "2026-09-10T00:00:00.000Z" },
+      { "id": "c4", "name": "Giantsチケット", "idList": "l_tgs", "due": null, "dueComplete": true, "desc": "ビジネスディ×1枚", "labels": [], "shortUrl": "https://trello.com/c/v4IAe0ur", "dateLastActivity": "2026-09-11T07:57:28.089Z" },
+      { "id": "c5", "name": "Serenity Forge", "idList": "l_new", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/sf", "dateLastActivity": "2026-09-01T00:00:00.000Z" },
+      { "id": "c6", "name": "Taiko Studios", "idList": "l_new", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/ts", "dateLastActivity": "2026-09-01T00:00:00.000Z" },
+      { "id": "c7", "name": "カリプソメディアジャパン", "idList": "l_new", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/cm", "dateLastActivity": "2026-08-28T00:00:00.000Z" },
+      { "id": "c8", "name": "契約書レビュー", "idList": "l_nada", "due": "2026-09-15T09:00:00.000Z", "dueComplete": false, "desc": "", "labels": [{ "color": "yellow", "name": "優先" }], "shortUrl": "https://trello.com/c/nd", "dateLastActivity": "2026-09-11T00:00:00.000Z" }
+    ]
+  },
+  {
+    "id": "b_todo",
+    "name": "TODO",
+    "shortUrl": "https://trello.com/b/MQFlv4ar",
+    "lists": [
+      { "id": "l_todo", "name": "To-Do" },
+      { "id": "l_doing", "name": "Doing" },
+      { "id": "l_done", "name": "🎉 Done" }
+    ],
+    "cards": [
+      { "id": "c10", "name": "住民税の支払い", "idList": "l_todo", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/t1", "dateLastActivity": "2026-09-12T00:00:00.000Z" },
+      { "id": "c11", "name": "MeWork 试用一周看看", "idList": "l_doing", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/t2", "dateLastActivity": "2026-09-12T00:00:00.000Z" },
+      { "id": "c12", "name": "已经做完的事", "idList": "l_done", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/t3", "dateLastActivity": "2026-09-11T00:00:00.000Z" }
+    ]
+  },
+  {
+    "id": "b_life",
+    "name": "生活",
+    "shortUrl": "https://trello.com/b/uK2nSdpK",
+    "lists": [{ "id": "l_side", "name": "副业" }, { "id": "l_fin", "name": "Finish" }],
+    "cards": [
+      { "id": "c20", "name": "AI 简报自动化", "idList": "l_side", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/s1", "dateLastActivity": "2026-09-12T00:00:00.000Z" }
+    ]
+  }
+]

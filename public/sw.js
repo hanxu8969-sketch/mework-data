@@ -16,27 +16,31 @@ async function buildNotification() {
   if (!res.ok) throw new Error(`bootstrap ${res.status}`);
   const data = await res.json();
 
-  const rank = { p0: 0, p1: 1, p2: 2, p3: 3 };
-  const open = (data.projects || [])
-    .filter((p) => p.status === 'active')
-    .flatMap((p) => (p.tasks || []).filter((t) => t.status !== 'done').map((t) => ({ ...t, _p: p.title })));
-  const sort = (a, b) => (rank[a.priority] ?? 2) - (rank[b.priority] ?? 2) || String(a.due || '9999').localeCompare(String(b.due || '9999'));
-  const overdue = open.filter((t) => t.due && t.due < today).sort(sort);
-  const due = open.filter((t) => t.due === today).sort(sort);
-
   const md = `${+today.slice(5, 7)}月${+today.slice(8, 10)}日`;
-  let title, lines = [];
-  if (overdue.length || due.length) {
-    const bits = [];
-    if (overdue.length) bits.push(`逾期 ${overdue.length}`);
-    if (due.length) bits.push(`今天 ${due.length}`);
-    title = `☀️ ${md} · ${bits.join(' · ')}`;
-    lines = [...overdue, ...due].slice(0, 5).map((t) => `${PRI[t.priority] || '•'} ${t.title} — ${t._p}`);
-    if (overdue.length + due.length > 5) lines.push(`…还有 ${overdue.length + due.length - 5} 项`);
+  const tr = data.trello || {};
+  const lines = [];
+  let title;
+
+  // 主体：Trello 各列表的未完成数
+  if (tr.enabled && !tr.error) {
+    title = tr.total > 0 ? `☀️ ${md} · 未完成 ${tr.total} 项` : `☀️ ${md} · Trello 已清空`;
+    if (tr.total > 0) {
+      lines.push(...(tr.lanes || []).slice(0, 7).map((l) => `• ${l.title} ${l.count}`));
+      const rest = (tr.lanes || []).slice(7).reduce((n, l) => n + l.count, 0);
+      if (rest) lines.push(`• 其余 ${rest}`);
+    } else {
+      lines.push('✅ 没有未完成的卡片');
+    }
   } else {
-    title = `☀️ ${md} · 今天没有到期任务`;
-    lines = ['✅ 逾期和今日到期都清空了'];
+    title = `☀️ ${md} · 早安`;
+    lines.push(tr.error ? '⚠️ Trello 读取失败，打开看板查看' : '打开看板查看今天的安排');
   }
+
+  // 逾期的 Trello 卡片单独点名（设了 due 才有）
+  const overdue = (data.projects || [])
+    .filter((p) => p.source === 'trello' && !p.is_done_lane)
+    .flatMap((p) => (p.tasks || []).filter((t) => t.status !== 'done' && t.due && t.due < today));
+  if (overdue.length) lines.push(`🔥 逾期 ${overdue.length}：${overdue.slice(0, 2).map((t) => t.title).join('、')}`);
 
   // 简报状态：如实反映，不谎报
   try {
