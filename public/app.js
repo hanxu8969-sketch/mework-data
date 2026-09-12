@@ -153,6 +153,10 @@ function esc(s) { const d = document.createElement('span'); d.textContent = s ??
 function renderToday(el) {
   el.innerHTML = '';
   const today = todayStr(), wend = weekEnd();
+  const pr = document.createElement('div');
+  pr.className = 'push-row'; pr.id = 'push-row'; pr.hidden = true;
+  el.appendChild(pr);
+  renderPushRow();
   renderBriefingPanel(el);
   // quick create
   const qc = document.createElement('div'); qc.className = 'quick';
@@ -549,6 +553,68 @@ function openDrawer(tid, pid) {
 }
 function closeDrawer() { $('#drawer').hidden = $('#drawer-mask').hidden = true; }
 
+// ---------- 每日提醒（Web Push）----------
+const b64ToU8 = (s) => {
+  const p = (s + '='.repeat((4 - (s.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+  return Uint8Array.from(atob(p), (c) => c.charCodeAt(0));
+};
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+async function initPush() {
+  if (!('serviceWorker' in navigator)) return;
+  try { await navigator.serviceWorker.register('/sw.js'); } catch { return; }
+  renderPushRow();
+}
+
+async function pushState() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported';
+  // iOS 只有加到主屏后才允许申请通知权限
+  if (/iPhone|iPad|iPod/.test(navigator.userAgent) && !isStandalone()) return 'needs-install';
+  if (Notification.permission === 'denied') return 'denied';
+  const reg = await navigator.serviceWorker.ready;
+  return (await reg.pushManager.getSubscription()) ? 'on' : 'off';
+}
+
+async function enablePush() {
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') { toast('通知权限被拒绝，可在系统设置里改回来', true); return renderPushRow(); }
+  const { publicKey } = await api('GET', '/api/push/key');
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(publicKey) });
+  await api('POST', '/api/push/subscribe', sub.toJSON());
+  toast('已开启，每天早上 7 点提醒你 ✓');
+  renderPushRow();
+}
+
+async function disablePush() {
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub) {
+    await api('POST', '/api/push/unsubscribe', { endpoint: sub.endpoint }).catch(() => { });
+    await sub.unsubscribe();
+  }
+  toast('已关闭每日提醒');
+  renderPushRow();
+}
+
+async function renderPushRow() {
+  const host = $('#push-row');
+  if (!host) return;
+  const st = await pushState();
+  const msg = {
+    unsupported: ['此浏览器不支持推送通知', null],
+    'needs-install': ['想收每日提醒？先点分享按钮 →「加入主屏幕」，再从主屏打开', null],
+    denied: ['通知已被系统拒绝，需到 设置 → 通知 → MeWork 里打开', null],
+    off: ['每天早上 7 点提醒今日待办与简报', '开启提醒'],
+    on: ['✅ 每日提醒已开启（早上 7 点）', '关闭'],
+  }[st];
+  if (!msg) return;
+  host.innerHTML = `<span>${esc(msg[0])}</span>${msg[1] ? `<button class="btn ghost" id="push-btn">${msg[1]}</button>` : ''}`;
+  host.hidden = false;
+  const btn = $('#push-btn', host);
+  if (btn) btn.onclick = () => (st === 'on' ? disablePush() : enablePush());
+}
+
 // ---------- shell ----------
 function switchView(v) {
   S.view = v;
@@ -571,3 +637,4 @@ function render() {
   if (S.view === 'projects') renderProjects(el);
 }
 load();
+initPush();

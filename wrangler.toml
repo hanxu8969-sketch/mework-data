@@ -7,10 +7,12 @@ compatibility_flags = ["nodejs_compat"]
 directory = "public"
 binding = "ASSETS"
 
-# JST 07:30 每日简报；JST 周五 17:00 下周优先任务；其余整点做日历对账
-# Cron 用 UTC：JST = UTC+9 → 07:30 JST = 22:30 UTC(前一日)；17:00 JST 周五 = 08:00 UTC 周五
+# Cron 用 UTC（JST = UTC+9）
+#   22:00 UTC = 07:00 JST 每天  → 推送今日待办到手机
+#   08:00 UTC 周五 = 17:00 JST  → 生成下周优先任务
+#   每 3 小时                    → 日历对账（21:00/00:00 UTC 都不落在 07 时，不会与推送重复触发）
 [triggers]
-crons = ["30 22 * * *", "0 8 * * 5", "0 */3 * * *"]
+crons = ["0 22 * * *", "0 8 * * 5", "0 */3 * * *"]
 
 [vars]
 GITHUB_OWNER = "hanxu8969-sketch"

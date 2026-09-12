@@ -4,7 +4,8 @@ import { handleApi } from './api.js';
 import { GitHubStore } from './github-store.js';
 import { GoogleCalendar } from './google.js';
 import { syncBoardToCalendar, fetchProjection } from './sync.js';
-import { runWeeklyPlan, writeBriefing, jstDate } from './briefing.js';
+import { runWeeklyPlan, writeBriefing, readBriefing, jstDate } from './briefing.js';
+import { pushAll, saveSubscription, removeSubscription } from './push.js';
 
 // ---- Cloudflare Access JWT 校验 ----
 let jwksCache = { keys: null, exp: 0 };
@@ -54,6 +55,24 @@ export default {
 
     const store = storeOf(env);
 
+    // Web Push：订阅管理与自测
+    if (url.pathname === '/api/push/key' && request.method === 'GET') {
+      return json(200, { publicKey: env.VAPID_PUBLIC_KEY || null });
+    }
+    if (url.pathname === '/api/push/subscribe' && request.method === 'POST') {
+      const sub = await request.json().catch(() => null);
+      if (!sub?.endpoint || !sub?.keys) return json(400, { error: '订阅数据不完整' });
+      return json(200, await saveSubscription(store, sub));
+    }
+    if (url.pathname === '/api/push/unsubscribe' && request.method === 'POST') {
+      const { endpoint } = (await request.json().catch(() => ({}))) || {};
+      if (!endpoint) return json(400, { error: '缺 endpoint' });
+      return json(200, await removeSubscription(store, endpoint));
+    }
+    if (url.pathname === '/api/push/test' && request.method === 'POST') {
+      return json(200, await pushAll(store, env));
+    }
+
     // 日历：只读投影
     if (url.pathname === '/api/calendar/today' && request.method === 'GET') {
       const gcal = gcalOf(env);
@@ -94,8 +113,16 @@ export default {
     const jstDow = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Tokyo', weekday: 'short' }).format(new Date());
 
     const tasks = [];
-    // 每天 07:30 JST：先落一份只含「今日待办」的简报骨架，研究正文由定时 Claude 代理补写
-    if (jstHour === 7) tasks.push(writeBriefing(store, date, {}).catch(() => { }));
+    // 07:00 JST：推送今日待办到手机。跑在云端，Mac 关机也照发。
+    // 简报由 Mac 上的定时代理在 06:30 先写好；没写成也照发待办，SW 会如实标注"简报尚未生成"。
+    if (jstHour === 7) {
+      tasks.push((async () => {
+        // 只在当天简报还不存在时补一份「仅待办」的骨架 —— 绝不覆盖 Mac 已写入的 report
+        const existing = await readBriefing(store, date).catch(() => null);
+        if (!existing) await writeBriefing(store, date, {}).catch(() => { });
+        return pushAll(store, env);
+      })());
+    }
     if (jstDow === 'Fri' && jstHour === 17) tasks.push(runWeeklyPlan(store, date)); // 周五 17:00 JST
     const gcal = gcalOf(env);
     if (gcal) tasks.push(syncBoardToCalendar(store, gcal));
