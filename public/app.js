@@ -104,7 +104,7 @@ function renderBriefingPanel(el) {
   if (!b) { box.innerHTML = '<div class="brief-head"><b>📰 今日简报</b><span class="badge">加载中…</span></div>'; el.appendChild(box); return; }
   if (b.missing) {
     box.innerHTML = `<div class="brief-head"><b>📰 今日简报</b><span class="badge">${esc(b.date)} 尚未生成</span></div>
-      <div class="brief-body"><p style="color:var(--muted)">每天 07:00（JST）自动送达：游戏市场 report、AI 市场 report、今天的待办提醒。</p></div>`;
+      <div class="brief-body"><p style="color:var(--muted)">每晚 21:00 生成次日简报（游戏市场 report + AI 市场 report），早上 07:00 推送到手机。待办来自 Trello，见上方。</p></div>`;
     el.appendChild(box); return;
   }
   const open = localStorage.getItem('mw-brief-open') !== '0';
@@ -249,67 +249,13 @@ function renderTrelloSection(el) {
 
 function renderToday(el) {
   el.innerHTML = '';
-  const today = todayStr(), wend = weekEnd();
   const pr = document.createElement('div');
   pr.className = 'push-row'; pr.id = 'push-row'; pr.hidden = true;
   el.appendChild(pr);
   renderPushRow();
-  // 顺序即优先级：先要做的事（Trello），再阅读材料（简报）
+  // 任务全部来自 Trello（唯一事实源）；这里只做提醒与阅读，不再显示 MeWork 自有任务
   renderTrelloSection(el);
   renderBriefingPanel(el);
-  // quick create
-  const qc = document.createElement('div'); qc.className = 'quick';
-  qc.innerHTML = `
-    <input type="text" id="qc-title" placeholder="快速创建：只需输入标题，回车即建（默认今天到期）" aria-label="新任务标题">
-    <select id="qc-proj" aria-label="所属项目">${ownProjects().map((p) => `<option value="${p.id}">${esc(p.title)}</option>`).join('')}</select>
-    <button class="btn" id="qc-go">＋ 创建</button>`;
-  el.appendChild(qc);
-  const create = async () => {
-    const title = $('#qc-title').value.trim();
-    if (!title) return;
-    $('#qc-go').disabled = true;
-    try {
-      const r = await api('POST', '/api/tasks', { operation_id: opid(), task: { project_id: $('#qc-proj').value, title, due: today } });
-      upsertTask(r.record, r.revision); $('#qc-title').value = ''; render(); toast('已创建并写回 ✓');
-    } catch (e) { toast(`创建失败：${e.message}`, true); }
-    finally { $('#qc-go').disabled = false; }
-  };
-  $('#qc-go', qc).onclick = create;
-  $('#qc-title', qc).onkeydown = (e) => { if (e.key === 'Enter') create(); };
-
-  // project one-line progress
-  const strip = document.createElement('div'); strip.className = 'pstrip';
-  for (const p of ownProjects()) {
-    const open = p.tasks.filter((t) => t.status !== 'done');
-    const doing = open.filter((t) => t.status === 'doing').length;
-    const over = open.filter((t) => t.due && t.due < today).length;
-    const card = document.createElement('div'); card.className = 'pcard';
-    card.innerHTML = `<h4>${esc(p.title)}</h4><div class="pline">${open.length} 项未完成 · ${doing} 进行中${over ? ` · <b style="color:var(--red)">${over} 逾期</b>` : ''}</div>`;
-    card.onclick = () => switchView('timeline');
-    strip.appendChild(card);
-  }
-  el.appendChild(strip);
-
-  // Trello 卡片有自己的区块，这里只列 MeWork 自身的任务，避免同一条出现两次
-  const ts = allTasks().filter((t) => t._project.status === 'active' && t._project.source !== 'trello');
-  const overdue = sortTasks(ts.filter((t) => t.status !== 'done' && t.due && t.due < today));
-  const todays = sortTasks(ts.filter((t) => t.due === today && t.status !== 'done'));
-  const week = sortTasks(ts.filter((t) => t.status !== 'done' && t.due && t.due > today && t.due <= wend));
-  const doneToday = ts.filter((t) => t.status === 'done' && (t.completed_at || '').slice(0, 10) === today);
-
-  const sec = (title, arr, empty) => {
-    const h = document.createElement('div'); h.className = 'section-h';
-    h.innerHTML = `<h3>${title}</h3><span class="count">${arr.length}</span>`;
-    el.appendChild(h);
-    const list = document.createElement('div'); list.className = 'tlist';
-    if (!arr.length) list.innerHTML = `<div class="state-box">${empty}</div>`;
-    else arr.forEach((t) => list.appendChild(taskRow(t)));
-    el.appendChild(list);
-  };
-  sec('🔥 逾期 Overdue', overdue, '没有逾期，干得漂亮');
-  sec('📌 今天 Today', todays, '今天暂无到期任务');
-  sec(`🗓️ 本周必做（未来 7 天，至 ${fmtMd(wend)}）`, week, '未来 7 天无到期任务');
-  if (doneToday.length) sec('✅ 今天已完成', doneToday, '');
 }
 
 // ---------- Timeline ----------
