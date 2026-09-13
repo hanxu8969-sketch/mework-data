@@ -99,8 +99,10 @@ export default {
       if (!boards) return json(400, { error: 'Trello 未配置' });
       return json(200, await exportTrelloToStore(store, projectTrello(boards, jstDate()), jstDate()));
     }
-    if (url.pathname === '/api/push/test' && request.method === 'POST') {
-      return json(200, await pushAll(store, env));
+    // 也接受 GET，方便在浏览器里直接点链接自测（仅诊断用，已在 Access 之后）
+    if (url.pathname === '/api/push/test') {
+      const r = await pushAll(store, env);
+      return json(200, { ...r, 提示: r.sent ? `已向 ${r.sent} 台设备发送，手机上几秒内应收到通知` : '没有已订阅的设备，请先在手机主屏 App 里开启提醒' });
     }
 
     // 日历：只读投影
