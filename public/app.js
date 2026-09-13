@@ -356,15 +356,95 @@ function renderTrelloSection(el) {
   el.appendChild(box);
 }
 
+// 收件箱：每天真正要做的事（Trello Inbox，不在任何看板上）
+function renderInbox(el) {
+  const inbox = S.data?.trello?.inbox;
+  if (!inbox?.cards?.length) return;
+  const box = document.createElement('section'); box.className = 'inbox';
+  const over = inbox.cards.filter((c) => c.overdue).length;
+  box.innerHTML = `<div class="ib-head"><b>📥 收件箱</b>
+      <span class="badge">${inbox.cards.length} 项</span>
+      ${over ? `<span class="badge st-critical">⚠️ ${over} 项逾期</span>` : ''}
+      <a class="ib-link" href="https://trello.com/my/inbox" target="_blank" rel="noopener">在 Trello 打开 ↗</a></div>`;
+  const list = document.createElement('div'); list.className = 'ib-list';
+  inbox.cards.forEach((c, i) => {
+    const row = document.createElement('div'); row.className = 'ib-row' + (c.overdue ? ' over' : '');
+    row.innerHTML = `<div class="ib-top">
+        <span class="ib-i">${i + 1}</span>
+        <span class="ib-name">${esc(c.title)}</span>
+        ${c.due ? `<span class="badge ${c.overdue ? 'st-critical' : ''}">${c.overdue ? '⚠️ 逾期 ' : ''}${fmtMd(c.due)}</span>` : ''}
+        ${c.body ? '<span class="tl-more">说明 ▾</span>' : ''}
+        <a class="tl-open" href="${esc(c.url)}" target="_blank" rel="noopener" title="在 Trello 打开">↗</a>
+      </div>${c.body ? `<div class="tl-desc" hidden>${md(c.body)}</div>` : ''}`;
+    const d = $('.tl-desc', row), more = $('.tl-more', row);
+    if (d) $('.ib-top', row).onclick = (e) => {
+      if (e.target.closest('.tl-open')) return;
+      d.hidden = !d.hidden; more.textContent = d.hidden ? '说明 ▾' : '收起 ▴';
+      row.classList.toggle('open', !d.hidden);
+    };
+    list.appendChild(row);
+  });
+  box.appendChild(list); el.appendChild(box);
+}
+
+// 数字条：四个一眼可读的量，不用图表
+function renderStats(el) {
+  const tr = S.data?.trello; if (!tr?.enabled) return;
+  const today = todayStr();
+  const lanes = trelloLanes().filter((p) => !p.is_done_lane);
+  const inboxOver = (tr.inbox?.cards || []).filter((c) => c.overdue).length;
+  const ms = lanes.flatMap((p) => p.tasks.filter((t) => t.status !== 'done' && t.milestone));
+  const in30 = ms.filter((t) => t.milestone >= today && t.milestone <= addDays(today, 30)).length;
+  const stale = lanes.filter((p) => p.open_count > 0 && p.last_activity
+    && (Date.now() - Date.parse(p.last_activity)) / 864e5 > 60).length;
+
+  const tiles = [
+    { n: tr.inbox?.count ?? 0, label: '收件箱待办', sub: inboxOver ? `⚠️ ${inboxOver} 项逾期` : '无逾期', bad: inboxOver > 0 },
+    { n: tr.total, label: '未完成合计', sub: `${lanes.length} 条线` },
+    { n: in30, label: '30 天内节点', sub: ms.length ? `共 ${ms.length} 个节点` : '暂无' },
+    { n: stale, label: '停滞的线', sub: stale ? '⚠️ 超 60 天无动静' : '都在动', warn: stale > 0 },
+  ];
+  const box = document.createElement('div'); box.className = 'stats';
+  box.innerHTML = tiles.map((t) => `<div class="stat${t.bad ? ' bad' : t.warn ? ' warn' : ''}">
+      <div class="stat-n">${t.n}</div><div class="stat-l">${t.label}</div>
+      <div class="stat-s">${esc(t.sub)}</div></div>`).join('');
+  el.appendChild(box);
+}
+
+// 各线负载：单序列水平条形图（长度表大小，单一色相，直接标数）
+function renderLoadChart(el) {
+  const lanes = trelloLanes().filter((p) => !p.is_done_lane && p.open_count > 0)
+    .sort((a, b) => b.open_count - a.open_count);
+  if (lanes.length < 2) return;
+  const max = lanes[0].open_count;
+  const box = document.createElement('section'); box.className = 'chart';
+  box.innerHTML = `<div class="ch-head"><b>📊 各线未完成</b>
+      <span class="badge">共 ${lanes.reduce((n, p) => n + p.open_count, 0)} 项</span></div>`;
+  const body = document.createElement('div'); body.className = 'ch-body';
+  body.innerHTML = lanes.map((p) => {
+    const idle = p.last_activity ? Math.round((Date.now() - Date.parse(p.last_activity)) / 864e5) : null;
+    const stale = idle !== null && idle > 60;
+    return `<div class="ch-row" title="${esc(p.title)}：${p.open_count} 项未完成${idle !== null ? `，${idle} 天前有动静` : ''}">
+      <span class="ch-label">${esc(p.title)}</span>
+      <span class="ch-track"><span class="ch-bar" style="width:${Math.max(3, (p.open_count / max) * 100)}%"></span></span>
+      <span class="ch-val">${p.open_count}</span>
+      ${stale ? `<span class="ch-flag" title="超 60 天无动静">⚠️ ${idle}天</span>` : '<span class="ch-flag"></span>'}
+    </div>`;
+  }).join('');
+  box.appendChild(body);
+  el.appendChild(box);
+}
+
 function renderToday(el) {
   el.innerHTML = '';
   const pr = document.createElement('div');
   pr.className = 'push-row'; pr.id = 'push-row'; pr.hidden = true;
   el.appendChild(pr);
   renderPushRow();
-  // 任务全部来自 Trello（唯一事实源）；这里只做提醒与阅读，不再显示 MeWork 自有任务
-  renderMilestones(el);
-  renderTrelloSection(el);
+  renderStats(el);       // 一眼看量
+  renderInbox(el);       // 今天真正要做的
+  renderLoadChart(el);   // 各线负载
+  renderMilestones(el);  // 近期节点
 }
 
 // ---------- Timeline ----------
@@ -593,11 +673,14 @@ function renderProjects(el) {
           ${ms ? `<span class="badge ${dd < 0 ? 'due-over' : dd <= 14 ? 'ok' : ''}">下一节点 ${fmtMd(ms)}${dd >= 0 ? ` · ${dd} 天后` : ` · 逾期 ${-dd} 天`}</span>` : '<span class="badge">无节点日期</span>'}
           ${idle !== null ? `<span class="badge ${stale ? 'warn' : ''}">${idle} 天前有动静</span>` : ''}
         </div>
-        <div class="pj-list">${p.tasks.filter((t) => t.status !== 'done').slice(0, 4)
-          .map((t) => `<div class="pj-item">• ${esc(t.title)}</div>`).join('')
-          || '<div class="pj-item" style="opacity:.6">全部完成 ✓</div>'}
-          ${p.open_count > 4 ? `<div class="pj-item" style="opacity:.6">…还有 ${p.open_count - 4} 项</div>` : ''}
-        </div>
+        <ol class="pj-list">${p.tasks.filter((t) => t.status !== 'done')
+          .map((t) => {
+            const d = t.milestone ? diffDays(today, t.milestone) : null;
+            return `<li class="pj-item"><a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.title)}</a>${
+              t.milestone ? `<span class="badge ${d < 0 ? 'st-critical' : d <= 30 ? 'soon' : ''}">${fmtMd(t.milestone)}</span>` : ''}</li>`;
+          }).join('')
+          || '<li class="pj-item none">全部完成 ✓</li>'}
+        </ol>
         <a class="pj-open" href="${esc(p.url)}" target="_blank" rel="noopener">在 Trello 打开 ↗</a>`;
       grid.appendChild(card);
     }

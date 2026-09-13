@@ -7,6 +7,7 @@ export const EXCLUDED_BOARDS = ['納品情報のお知らせ'];
 // 列表名命中即视为「已完成」栏：其中的卡片不计入未完成
 const DONE_LIST = /(^|[\s\W])(done|finish(ed)?|complete[d]?|完了|完成|已完成)([\s\W]|$)/i;
 
+const jstToday = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 const jstDateOf = (iso) => iso
   ? new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso))
   : null;
@@ -77,18 +78,45 @@ export async function fetchTrello(env) {
   return wanted;
 }
 
-/** Trello 收件箱 —— 用户的每日 todo 在这里，它不在 boards 列表中 */
+/**
+ * Trello 收件箱 —— 用户的每日 todo 在这里，它**不在** /members/me/boards 的返回里。
+ * board id 的位置在不同账号上不一致，所以按几个已知位置依次探，都不中就放弃（不报错）。
+ */
+export async function fetchInboxBoardId(env) {
+  const me = await tget(env, '/members/me', { fields: 'id,prefs' }).catch(() => null);
+  const p = me?.prefs || {};
+  const direct = p.idBoardInbox || p.inboxBoardId || p.inbox?.boardId || p.inbox?.idBoard;
+  if (direct) return direct;
+  // 兜底：在全部看板里找收件箱（Trello 各语言的叫法）
+  const all = await tget(env, '/members/me/boards', { filter: 'all', fields: 'name,type' }).catch(() => []);
+  const hit = (all || []).find((b) => /^(inbox|受信トレイ|収件箱|收件箱)$/i.test(b.name || '') || b.type === 'inbox');
+  return hit?.id || null;
+}
+
 export async function fetchInbox(env) {
   if (!env.TRELLO_KEY || !env.TRELLO_TOKEN) return null;
-  // 收件箱是账号级的特殊看板，board id 存在 member 的 prefs 里
-  const me = await tget(env, '/members/me', { fields: 'id,prefs' }).catch(() => null);
-  const inboxId = me?.prefs?.idBoardInbox || me?.prefs?.inbox?.boardId || null;
-  if (!inboxId) return null;
-  const [lists, cards] = await Promise.all([
-    tget(env, `/boards/${inboxId}/lists`, { filter: 'open', fields: 'name,pos' }).catch(() => []),
-    tget(env, `/boards/${inboxId}/cards`, { filter: 'open', fields: CARD_FIELDS }).catch(() => []),
-  ]);
-  return { id: inboxId, name: '收件箱', shortUrl: 'https://trello.com/my/inbox', lists, cards };
+  const id = await fetchInboxBoardId(env);
+  if (!id) return null;
+  const cards = await tget(env, `/boards/${id}/cards`, { filter: 'open', fields: CARD_FIELDS }).catch(() => null);
+  if (!cards) return null;
+  const today = jstToday();
+  return {
+    count: cards.filter((c) => !c.dueComplete).length,
+    cards: cards.filter((c) => !c.dueComplete).map((c) => ({
+      id: `inbox_${c.id}`,
+      title: c.name,
+      due: c.due ? jstDateOf(c.due) : null,
+      body: cleanDesc(c.desc),
+      labels: (c.labels || []).map((l) => l.name || l.color).filter(Boolean),
+      url: c.shortUrl,
+      last_activity: c.dateLastActivity || null,
+      overdue: !!(c.due && jstDateOf(c.due) < today),
+      source: 'inbox',
+      read_only: true,
+    })).sort((a, b) => (b.overdue - a.overdue)
+      || String(a.due || '9999').localeCompare(String(b.due || '9999'))
+      || String(b.last_activity || '').localeCompare(String(a.last_activity || ''))),
+  };
 }
 
 /**

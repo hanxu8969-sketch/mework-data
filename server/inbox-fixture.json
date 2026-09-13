@@ -1,0 +1,101 @@
+{
+ "count": 8,
+ "cards": [
+  {
+   "id": "inbox_gy5on8Kk",
+   "title": "LEGOバットマン　NS2サンプル",
+   "due": "2026-09-09",
+   "body": "■To Tony (London, UK)　3units\n\n■To Alex (Singapore) 3units\n\n■To QA：1units\n\n■To CS：10units\n\n■東京オフィス:10units",
+   "labels": [],
+   "url": "https://trello.com/c/gy5on8Kk",
+   "last_activity": "2026-08-28T00:00:00.000Z",
+   "overdue": true,
+   "source": "inbox",
+   "read_only": true
+  },
+  {
+   "id": "inbox_Zq9NPUTx",
+   "title": "ホグワーツレガシー価格改定版　サンプル",
+   "due": "2026-09-10",
+   "body": "■To Tony (London, UK)　3units\n\n■To Alex (Singapore) 3units\n\n■To QA：1units\n\n■To CS：10units\n\n■東京オフィス:5units\n\nPS5/NSそれぞれ22本",
+   "labels": [],
+   "url": "https://trello.com/c/Zq9NPUTx",
+   "last_activity": "2026-08-28T00:00:00.000Z",
+   "overdue": true,
+   "source": "inbox",
+   "read_only": true
+  },
+  {
+   "id": "inbox_TCL2gyZX",
+   "title": "WB過去タイトルの発売停止",
+   "due": null,
+   "body": "- LEGO Marvel Avengers - expires 12/31/2026 + 180-day sell-off for physical and digital\n- LEGO Marvel Super Heroes - expires 12/31/2026 + 180-day sell-off\n- LEGO Marvel Super Heroes 2 - expires 12/31/2026 + 180-day sell-off\n- LEGO Incredibles - expires 12/31/2026 + 180-day sell-off for physical only",
+   "labels": [],
+   "url": "https://trello.com/c/TCL2gyZX",
+   "last_activity": "2026-09-11T00:00:00.000Z",
+   "overdue": false,
+   "source": "inbox",
+   "read_only": true
+  },
+  {
+   "id": "inbox_3mfeEao3",
+   "title": "レゴバットマンデモ試遊について",
+   "due": null,
+   "body": "",
+   "labels": [],
+   "url": "https://trello.com/c/3mfeEao3",
+   "last_activity": "2026-09-11T00:00:00.000Z",
+   "overdue": false,
+   "source": "inbox",
+   "read_only": true
+  },
+  {
+   "id": "inbox_hI1OPpfq",
+   "title": "WBさんレポート送付",
+   "due": null,
+   "body": "",
+   "labels": [],
+   "url": "https://trello.com/c/hI1OPpfq",
+   "last_activity": "2026-09-11T00:00:00.000Z",
+   "overdue": false,
+   "source": "inbox",
+   "read_only": true
+  },
+  {
+   "id": "inbox_g2gRjgYq",
+   "title": "TGS会うスケジュール確認",
+   "due": null,
+   "body": "",
+   "labels": [],
+   "url": "https://trello.com/c/g2gRjgYq",
+   "last_activity": "2026-09-07T00:00:00.000Z",
+   "overdue": false,
+   "source": "inbox",
+   "read_only": true
+  },
+  {
+   "id": "inbox_oWyp2vbR",
+   "title": "レゴハリーポッター　NS2サンプルについて",
+   "due": null,
+   "body": "■To Tony (London, UK)　3units\n\n■To Alex (Singapore) 3units\n\n■To QA：1units\n\n■To CS：10units\n\n■東京オフィス:5units",
+   "labels": [],
+   "url": "https://trello.com/c/oWyp2vbR",
+   "last_activity": "2026-08-20T00:00:00.000Z",
+   "overdue": false,
+   "source": "inbox",
+   "read_only": true
+  },
+  {
+   "id": "inbox_bOgYuLii",
+   "title": "Enotriaの解約の件について",
+   "due": null,
+   "body": "法務に連絡して、Enotria解約の書面を出してくれる。",
+   "labels": [],
+   "url": "https://trello.com/c/bOgYuLii",
+   "last_activity": "2026-09-08T00:00:00.000Z",
+   "overdue": false,
+   "source": "inbox",
+   "read_only": true
+  }
+ ]
+}

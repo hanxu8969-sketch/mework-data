@@ -6,7 +6,7 @@ import { GoogleCalendar } from './google.js';
 import { syncBoardToCalendar, fetchProjection } from './sync.js';
 import { runWeeklyPlan, writeBriefing, readBriefing, jstDate } from './briefing.js';
 import { pushAll, saveSubscription, removeSubscription } from './push.js';
-import { fetchTrello, projectTrello, summarize, exportTrelloToStore } from './trello.js';
+import { fetchTrello, fetchInbox, projectTrello, summarize, exportTrelloToStore } from './trello.js';
 
 // ---- Cloudflare Access JWT 校验 ----
 let jwksCache = { keys: null, exp: 0 };
@@ -130,12 +130,15 @@ export default {
       const base = await handleApi(store, 'GET', '/api/bootstrap', {}, null, null);
       if (base.status === 200) {
         try {
-          const boards = await fetchTrello(env);
+          const today = jstDate();
+          const [boards, inbox] = await Promise.all([
+            fetchTrello(env),
+            fetchInbox(env).catch(() => null),
+          ]);
           if (boards) {
-            const today = jstDate();
             const tp = projectTrello(boards, today);
             base.json.projects = [...tp, ...base.json.projects];
-            base.json.trello = { enabled: true, ...summarize(tp) };
+            base.json.trello = { enabled: true, ...summarize(tp), inbox: inbox || { count: 0, cards: [] } };
           } else {
             base.json.trello = { enabled: false, total: 0, lanes: [] };
           }

@@ -31,7 +31,7 @@ const server = http.createServer(async (req, res) => {
       // 本地也合并 Trello：有 TRELLO_KEY 就拉真实数据，否则用 fixture（便于离线开发）
       if (url.pathname === '/api/bootstrap' && out.status === 200) {
         try {
-          const { fetchTrello, projectTrello, summarize } = await import('./trello.js');
+          const { fetchTrello, fetchInbox, projectTrello, summarize } = await import('./trello.js');
           const { jstDate } = await import('./briefing.js');
           let boards = await fetchTrello(process.env);
           if (!boards) {
@@ -41,7 +41,8 @@ const server = http.createServer(async (req, res) => {
           if (boards) {
             const tp = projectTrello(boards, jstDate());
             out.json.projects = [...tp, ...out.json.projects];
-            out.json.trello = { enabled: true, ...summarize(tp) };
+            const inbox = await fetchInbox(process.env).catch(() => null);
+            out.json.trello = { enabled: true, ...summarize(tp), inbox: inbox || JSON.parse(await fs.readFile(path.join(root,'server','inbox-fixture.json'),'utf8').catch(() => 'null')) || { count: 0, cards: [] } };
           } else {
             out.json.trello = { enabled: false, total: 0, lanes: [] };
           }
