@@ -2,7 +2,7 @@
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 
-const S = { data: null, view: 'today', tlStart: null, tlDays: 0, collapsed: new Set(), error: null, loading: true };
+const S = { data: null, view: 'brief', tlStart: null, tlDays: 0, collapsed: new Set(), error: null, loading: true };
 
 // ---------- date helpers (Asia/Tokyo) ----------
 const JST_FMT = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -39,7 +39,7 @@ async function load() {
   try { S.data = await api('GET', '/api/bootstrap'); }
   catch (e) { S.error = e.message; }
   S.loading = false; render();
-  api('GET', '/api/briefing').then((b) => { S.briefing = b; if (S.view === 'today') render(); }).catch(() => { });
+  api('GET', '/api/briefing').then((b) => { S.briefing = b; if (S.view === 'brief') render(); }).catch(() => { });
 }
 
 // 极简 markdown → HTML（只支持简报用到的语法）
@@ -96,6 +96,29 @@ function md(src) {
   }
   closeTable(); closeQuote(); closeList();
   return out.join('');
+}
+
+
+// 简报独立成页：整页展开，不需要折叠
+function renderBriefView(el) {
+  el.innerHTML = '';
+  const b = S.briefing;
+  const box = document.createElement('section'); box.className = 'brief solo';
+  if (!b) { box.innerHTML = '<div class="state-box">加载中…</div>'; el.appendChild(box); return; }
+  if (b.missing) {
+    box.innerHTML = `<div class="brief-head"><b>📰 今日简报</b><span class="badge warn">${esc(b.date)} 尚未生成</span></div>
+      <div class="brief-body"><p style="color:var(--muted)">每晚 21:00 生成次日简报（游戏市场 report + AI 市场 report），早上 07:00 推送到手机。</p></div>`;
+    el.appendChild(box); return;
+  }
+  const stale = b.stale_days > 0;
+  box.innerHTML = `<div class="brief-head">
+      <b>📰 ${stale ? '最近一份简报' : '今日简报'}</b>
+      <span class="badge ${stale ? 'warn' : ''}">${esc(b.date)}${stale ? ` · ${b.stale_days} 天前` : ''}</span>
+      ${b.has_game_report ? '<span class="badge ok">🎮 游戏</span>' : '<span class="badge warn">🎮 未生成</span>'}
+      ${b.has_ai_report ? '<span class="badge ok">🤖 AI</span>' : '<span class="badge warn">🤖 未生成</span>'}
+    </div>
+    <div class="brief-body solo">${md(b.body)}</div>`;
+  el.appendChild(box);
 }
 
 function renderBriefingPanel(el) {
@@ -342,7 +365,6 @@ function renderToday(el) {
   // 任务全部来自 Trello（唯一事实源）；这里只做提醒与阅读，不再显示 MeWork 自有任务
   renderMilestones(el);
   renderTrelloSection(el);
-  renderBriefingPanel(el);
 }
 
 // ---------- Timeline ----------
@@ -830,6 +852,7 @@ function render() {
     return;
   }
   if (!S.data) return;
+  if (S.view === 'brief') renderBriefView(el);
   if (S.view === 'today') renderToday(el);
   if (S.view === 'timeline') renderTimeline(el);
   if (S.view === 'projects') renderProjects(el);

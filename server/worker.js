@@ -70,6 +70,30 @@ export default {
       if (!endpoint) return json(400, { error: '缺 endpoint' });
       return json(200, await removeSubscription(store, endpoint));
     }
+    // 诊断：确认卡片已取到，并探测收件箱的正确入口
+    if (url.pathname === '/api/trello/raw' && request.method === 'GET') {
+      if (!env.TRELLO_KEY || !env.TRELLO_TOKEN) return json(200, { configured: false });
+      const K = `key=${env.TRELLO_KEY}&token=${env.TRELLO_TOKEN}`;
+      const probe = async (path) => {
+        try {
+          const r = await fetch(`https://api.trello.com/1${path}${path.includes('?') ? '&' : '?'}${K}`);
+          const t = await r.text();
+          let d = null; try { d = JSON.parse(t); } catch { }
+          return { status: r.status, kind: Array.isArray(d) ? `array(${d.length})` : typeof d, peek: t.slice(0, 220) };
+        } catch (e) { return { error: String(e.message || e) }; }
+      };
+      const out = { fixed: null, inboxProbe: {} };
+      try {
+        const boards = await fetchTrello(env);
+        out.fixed = (boards || []).map((b) => ({
+          name: b.name, lists: b.lists?.length ?? null, cards: b.cards?.length ?? null,
+          open: (b.cards || []).filter((c) => !c.dueComplete).length,
+        }));
+      } catch (e) { out.fixed = { error: String(e.message || e) }; }
+      out.inboxProbe['members/me?fields=prefs'] = await probe('/members/me?fields=prefs');
+      out.inboxProbe['boards filter=all'] = await probe('/members/me/boards?filter=all&fields=name,type');
+      return json(200, out);
+    }
     if (url.pathname === '/api/trello/export' && request.method === 'POST') {
       const boards = await fetchTrello(env);
       if (!boards) return json(400, { error: 'Trello 未配置' });

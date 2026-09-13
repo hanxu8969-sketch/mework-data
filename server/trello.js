@@ -43,27 +43,52 @@ export function parseTitleDate(title) {
 
 export const isDoneList = (name) => DONE_LIST.test(name || '');
 
-export async function fetchTrello(env) {
-  if (!env.TRELLO_KEY || !env.TRELLO_TOKEN) return null;
-  const qs = new URLSearchParams({
-    key: env.TRELLO_KEY,
-    token: env.TRELLO_TOKEN,
-    filter: 'open',
-    fields: 'name,shortUrl',
-    lists: 'open',
-    list_fields: 'name,pos',
-    cards: 'open',
-    card_fields: 'name,due,dueComplete,idList,shortUrl,desc,labels,dateLastActivity',
-  });
-  const res = await fetch(`${API}/members/me/boards?${qs}`, { headers: { accept: 'application/json' } });
+async function tget(env, path, params = {}) {
+  const qs = new URLSearchParams({ key: env.TRELLO_KEY, token: env.TRELLO_TOKEN, ...params });
+  const res = await fetch(`${API}${path}?${qs}`, { headers: { accept: 'application/json' } });
   if (!res.ok) {
     const body = (await res.text()).slice(0, 150);
     const hint = res.status === 401 ? 'TRELLO_KEY/TOKEN 无效或已过期'
       : res.status === 429 ? 'Trello 限流，稍后重试'
         : 'Trello 返回异常';
-    throw Object.assign(new Error(`Trello ${res.status}：${hint}（${body}）`), { code: res.status === 401 ? 401 : 502 });
+    throw Object.assign(new Error(`Trello ${res.status} ${path}：${hint}（${body}）`), { code: res.status === 401 ? 401 : 502 });
   }
   return res.json();
+}
+
+const CARD_FIELDS = 'name,due,dueComplete,idList,shortUrl,desc,labels,dateLastActivity';
+
+/**
+ * 拉全 Trello。
+ * ⚠️ /members/me/boards 只能嵌套 lists，**不能同时嵌套 cards**（实测 cards 字段直接缺失），
+ * 所以卡片必须按看板单独取。4 个看板 ≈ 5 个子请求，远低于免费版 50 的上限。
+ * 另外 Inbox 不在 boards 列表里，单独取。
+ */
+export async function fetchTrello(env) {
+  if (!env.TRELLO_KEY || !env.TRELLO_TOKEN) return null;
+  const boards = await tget(env, '/members/me/boards', {
+    filter: 'open', fields: 'name,shortUrl', lists: 'open', list_fields: 'name,pos',
+  });
+  const wanted = (boards || []).filter((b) => !EXCLUDED_BOARDS.includes(b.name));
+  await Promise.all(wanted.map(async (b) => {
+    b.cards = await tget(env, `/boards/${b.id}/cards`, { filter: 'open', fields: CARD_FIELDS })
+      .catch(() => []);
+  }));
+  return wanted;
+}
+
+/** Trello 收件箱 —— 用户的每日 todo 在这里，它不在 boards 列表中 */
+export async function fetchInbox(env) {
+  if (!env.TRELLO_KEY || !env.TRELLO_TOKEN) return null;
+  // 收件箱是账号级的特殊看板，board id 存在 member 的 prefs 里
+  const me = await tget(env, '/members/me', { fields: 'id,prefs' }).catch(() => null);
+  const inboxId = me?.prefs?.idBoardInbox || me?.prefs?.inbox?.boardId || null;
+  if (!inboxId) return null;
+  const [lists, cards] = await Promise.all([
+    tget(env, `/boards/${inboxId}/lists`, { filter: 'open', fields: 'name,pos' }).catch(() => []),
+    tget(env, `/boards/${inboxId}/cards`, { filter: 'open', fields: CARD_FIELDS }).catch(() => []),
+  ]);
+  return { id: inboxId, name: '收件箱', shortUrl: 'https://trello.com/my/inbox', lists, cards };
 }
 
 /**
