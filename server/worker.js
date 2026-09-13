@@ -4,7 +4,7 @@ import { handleApi } from './api.js';
 import { GitHubStore } from './github-store.js';
 import { GoogleCalendar } from './google.js';
 import { syncBoardToCalendar, fetchProjection } from './sync.js';
-import { runWeeklyPlan, writeBriefing, readBriefing, jstDate } from './briefing.js';
+import { writeBriefing, readBriefing, jstDate } from './briefing.js';
 import { pushAll, saveSubscription, removeSubscription } from './push.js';
 import { fetchTrello, fetchInbox, projectTrello, summarize, exportTrelloToStore } from './trello.js';
 
@@ -177,7 +177,9 @@ export default {
         return pushAll(store, env);
       })());
     }
-    if (jstDow === 'Fri' && jstHour === 17) tasks.push(runWeeklyPlan(store, date)); // 周五 17:00 JST
+    // 周五 17:00 JST：推送周回顾。内容由 Service Worker 自取 /api/bootstrap 后按当天是周五组装，
+    // 所以这里只需触发推送本身（空负载推送，省掉 RFC 8291 负载加密）。
+    if (jstDow === 'Fri' && jstHour === 17) tasks.push(pushAll(store, env));
     // 每轮都把 Trello 导出成 markdown 落库 —— Obsidian 靠 git 同步读到它
     tasks.push((async () => {
       const boards = await fetchTrello(env);

@@ -9,12 +9,48 @@ const jstToday = () =>
   new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' })
     .format(new Date());
 
+
+const jstParts = () => {
+  const f = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tokyo', weekday: 'short', hour: '2-digit', hour12: false });
+  const p = Object.fromEntries(f.formatToParts(new Date()).map((x) => [x.type, x.value]));
+  return { dow: p.weekday, hour: Number(p.hour) };
+};
+const daysSince = (iso) => (iso ? Math.round((Date.now() - Date.parse(iso)) / 864e5) : null);
+
+// 周回顾：本周动过 / 停滞 / 未来两周节点 / 收件箱积压
+function buildWeekly(data, today) {
+  const lanes = (data.projects || []).filter((p) => p.source === 'trello' && !p.is_done_lane);
+  const moved = lanes.filter((p) => (daysSince(p.last_activity) ?? 99) <= 7);
+  const stalled = lanes.filter((p) => p.open_count > 0 && (daysSince(p.last_activity) ?? 0) > 60)
+    .sort((a, b) => daysSince(b.last_activity) - daysSince(a.last_activity));
+  const addD = (n) => {
+    const [y, m, d] = today.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+  };
+  const next14 = lanes.flatMap((p) => (p.tasks || []).filter((t) => t.status !== 'done'
+    && t.milestone && t.milestone >= today && t.milestone <= addD(14)));
+  const inboxOld = (data.trello?.inbox?.cards || []).filter((c) => (daysSince(c.last_activity) ?? 0) > 14);
+
+  const md = `${+today.slice(5, 7)}/${+today.slice(8, 10)}`;
+  const lines = [`本周动过 ${moved.length} 条线 · 共 ${lanes.length} 条`];
+  if (stalled.length) {
+    lines.push(`⚠️ 停滞 ${stalled.length}：${stalled.slice(0, 2).map((p) => `${p.title} ${daysSince(p.last_activity)}天`).join('、')}`);
+  } else lines.push('✅ 没有停滞的线');
+  lines.push(`📌 未来两周 ${next14.length} 个节点`);
+  if (inboxOld.length) lines.push(`📥 收件箱积压 ${inboxOld.length} 项（超 14 天）`);
+  return { title: `📋 周回顾 · ${md}`, body: lines.join('\n'), tag: 'mework-weekly' };
+}
+
 async function buildNotification() {
   const today = jstToday();
   // same-origin fetch 会带上 Access cookie
   const res = await fetch('/api/bootstrap', { credentials: 'same-origin' });
   if (!res.ok) throw new Error(`bootstrap ${res.status}`);
   const data = await res.json();
+
+  // 周五傍晚发周回顾，其余时间发每日待办
+  const { dow, hour } = jstParts();
+  if (dow === 'Fri' && hour >= 15) return buildWeekly(data, today);
 
   const md = `${+today.slice(5, 7)}月${+today.slice(8, 10)}日`;
   const tr = data.trello || {};
@@ -69,7 +105,7 @@ self.addEventListener('push', (event) => {
       body: n.body,
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      tag: 'mework-morning',
+      tag: n.tag || 'mework-morning',
       renotify: true,
       data: { url: BOARD },
     });
