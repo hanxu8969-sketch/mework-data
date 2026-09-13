@@ -6,7 +6,7 @@ import { GoogleCalendar } from './google.js';
 import { syncBoardToCalendar, fetchProjection } from './sync.js';
 import { runWeeklyPlan, writeBriefing, readBriefing, jstDate } from './briefing.js';
 import { pushAll, saveSubscription, removeSubscription } from './push.js';
-import { fetchTrello, projectTrello, summarize } from './trello.js';
+import { fetchTrello, projectTrello, summarize, exportTrelloToStore } from './trello.js';
 
 // ---- Cloudflare Access JWT 校验 ----
 let jwksCache = { keys: null, exp: 0 };
@@ -69,6 +69,11 @@ export default {
       const { endpoint } = (await request.json().catch(() => ({}))) || {};
       if (!endpoint) return json(400, { error: '缺 endpoint' });
       return json(200, await removeSubscription(store, endpoint));
+    }
+    if (url.pathname === '/api/trello/export' && request.method === 'POST') {
+      const boards = await fetchTrello(env);
+      if (!boards) return json(400, { error: 'Trello 未配置' });
+      return json(200, await exportTrelloToStore(store, projectTrello(boards, jstDate()), jstDate()));
     }
     if (url.pathname === '/api/push/test' && request.method === 'POST') {
       return json(200, await pushAll(store, env));
@@ -146,6 +151,13 @@ export default {
       })());
     }
     if (jstDow === 'Fri' && jstHour === 17) tasks.push(runWeeklyPlan(store, date)); // 周五 17:00 JST
+    // 每轮都把 Trello 导出成 markdown 落库 —— Obsidian 靠 git 同步读到它
+    tasks.push((async () => {
+      const boards = await fetchTrello(env);
+      if (!boards) return { skipped: 'Trello 未配置' };
+      return exportTrelloToStore(store, projectTrello(boards, date), date);
+    })().catch((e) => ({ error: String(e.message || e) })));
+
     const gcal = gcalOf(env);
     if (gcal) tasks.push(syncBoardToCalendar(store, gcal));
     ctx.waitUntil(Promise.allSettled(tasks));

@@ -1,47 +1,404 @@
 [
-  {
-    "id": "b_work",
-    "name": "⋈仕事",
-    "shortUrl": "https://trello.com/b/Kk3wmYNO",
-    "lists": [
-      { "id": "l_tgs", "name": "TGS2026" },
-      { "id": "l_new", "name": "【新規開拓】" },
-      { "id": "l_nada", "name": "【NADA】" },
-      { "id": "l_goal", "name": "目標設定" }
-    ],
-    "cards": [
-      { "id": "c1", "name": "アテンドスケジュール", "idList": "l_tgs", "due": null, "dueComplete": false, "desc": "![image.webp](https://trello.com/x.webp)", "labels": [], "shortUrl": "https://trello.com/c/9p2joNLq", "dateLastActivity": "2026-08-19T00:00:38.401Z" },
-      { "id": "c2", "name": "ロリポップチェーンソー Back 2 Back", "idList": "l_tgs", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/lp", "dateLastActivity": "2026-09-05T00:00:00.000Z" },
-      { "id": "c3", "name": "WBチケット", "idList": "l_tgs", "due": "2026-09-10T09:00:00.000Z", "dueComplete": false, "desc": "ビジネスディ×2枚", "labels": [{ "color": "red", "name": "" }], "shortUrl": "https://trello.com/c/wb", "dateLastActivity": "2026-09-10T00:00:00.000Z" },
-      { "id": "c4", "name": "Giantsチケット", "idList": "l_tgs", "due": null, "dueComplete": true, "desc": "ビジネスディ×1枚", "labels": [], "shortUrl": "https://trello.com/c/v4IAe0ur", "dateLastActivity": "2026-09-11T07:57:28.089Z" },
-      { "id": "c5", "name": "Serenity Forge", "idList": "l_new", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/sf", "dateLastActivity": "2026-09-01T00:00:00.000Z" },
-      { "id": "c6", "name": "Taiko Studios", "idList": "l_new", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/ts", "dateLastActivity": "2026-09-01T00:00:00.000Z" },
-      { "id": "c7", "name": "カリプソメディアジャパン", "idList": "l_new", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/cm", "dateLastActivity": "2026-08-28T00:00:00.000Z" },
-      { "id": "c8", "name": "契約書レビュー", "idList": "l_nada", "due": "2026-09-15T09:00:00.000Z", "dueComplete": false, "desc": "", "labels": [{ "color": "yellow", "name": "優先" }], "shortUrl": "https://trello.com/c/nd", "dateLastActivity": "2026-09-11T00:00:00.000Z" }
-    ]
-  },
-  {
-    "id": "b_todo",
-    "name": "TODO",
-    "shortUrl": "https://trello.com/b/MQFlv4ar",
-    "lists": [
-      { "id": "l_todo", "name": "To-Do" },
-      { "id": "l_doing", "name": "Doing" },
-      { "id": "l_done", "name": "🎉 Done" }
-    ],
-    "cards": [
-      { "id": "c10", "name": "住民税の支払い", "idList": "l_todo", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/t1", "dateLastActivity": "2026-09-12T00:00:00.000Z" },
-      { "id": "c11", "name": "MeWork 试用一周看看", "idList": "l_doing", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/t2", "dateLastActivity": "2026-09-12T00:00:00.000Z" },
-      { "id": "c12", "name": "已经做完的事", "idList": "l_done", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/t3", "dateLastActivity": "2026-09-11T00:00:00.000Z" }
-    ]
-  },
-  {
-    "id": "b_life",
-    "name": "生活",
-    "shortUrl": "https://trello.com/b/uK2nSdpK",
-    "lists": [{ "id": "l_side", "name": "副业" }, { "id": "l_fin", "name": "Finish" }],
-    "cards": [
-      { "id": "c20", "name": "AI 简报自动化", "idList": "l_side", "due": null, "dueComplete": false, "desc": "", "labels": [], "shortUrl": "https://trello.com/c/s1", "dateLastActivity": "2026-09-12T00:00:00.000Z" }
-    ]
-  }
+ {
+  "id": "b_work",
+  "name": "⋈仕事",
+  "shortUrl": "https://trello.com/b/Kk3wmYNO",
+  "lists": [
+   {
+    "id": "l_tgs",
+    "name": "TGS2026"
+   },
+   {
+    "id": "l_new",
+    "name": "【新規開拓】"
+   },
+   {
+    "id": "l_nada",
+    "name": "【NADA】"
+   },
+   {
+    "id": "l_ten",
+    "name": "【Tencent】"
+   },
+   {
+    "id": "l_gia",
+    "name": "【Giants】"
+   },
+   {
+    "id": "l_wb",
+    "name": "【ワーナーブラザーズ】"
+   },
+   {
+    "id": "l_rf",
+    "name": "【レイニーフロッグ】"
+   },
+   {
+    "id": "l_gsc",
+    "name": "【GSC】S.T.A.L.K.E.R2/PS5"
+   },
+   {
+    "id": "l_goal",
+    "name": "目標設定"
+   }
+  ],
+  "cards": [
+   {
+    "id": "9p2joNLq",
+    "name": "アテンドスケジュール",
+    "idList": "l_tgs",
+    "desc": "![image.webp](https://trello.com/x.webp)",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/9p2joNLq",
+    "dateLastActivity": "2026-08-19T00:00:38.401Z"
+   },
+   {
+    "id": "AC8VoY67",
+    "name": "ロリポップチェーンソー Back 2 Back",
+    "idList": "l_tgs",
+    "desc": "",
+    "due": "2026-09-19T02:00:00.000Z",
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/AC8VoY67",
+    "dateLastActivity": "2026-08-20T06:15:08.131Z"
+   },
+   {
+    "id": "3VbTkxSQ",
+    "name": "WBチケット",
+    "idList": "l_tgs",
+    "desc": "- 出展社パス：5枚 \n- ビジネスチケット：20枚",
+    "due": null,
+    "dueComplete": true,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/3VbTkxSQ",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "v4IAe0ur",
+    "name": "Giantsチケット",
+    "idList": "l_tgs",
+    "desc": "ビジネスディ×1枚",
+    "due": null,
+    "dueComplete": true,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/v4IAe0ur",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "phWRS7cK",
+    "name": "Serenity Forge",
+    "idList": "l_new",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/phWRS7cK",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "x05k0L9P",
+    "name": "Taiko Studios",
+    "idList": "l_new",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/x05k0L9P",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "gkalWo1v",
+    "name": "Gamirror Games",
+    "idList": "l_new",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/gkalWo1v",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "GPLoOrSd",
+    "name": "2P games",
+    "idList": "l_new",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/GPLoOrSd",
+    "dateLastActivity": "2026-09-08T03:20:09.945Z"
+   },
+   {
+    "id": "Xs6RT1pA",
+    "name": "LEENRAY",
+    "idList": "l_new",
+    "desc": "",
+    "due": null,
+    "dueComplete": true,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/Xs6RT1pA",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "XWf5FLnc",
+    "name": "カリプソメディアジャパン",
+    "idList": "l_new",
+    "desc": "",
+    "due": null,
+    "dueComplete": true,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/XWf5FLnc",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "a7RwM73g",
+    "name": "【PS5/NSW2】ロリポップチェーンソー2",
+    "idList": "l_nada",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/a7RwM73g",
+    "dateLastActivity": "2026-04-20T00:13:19.238Z"
+   },
+   {
+    "id": "RpAbe2LJ",
+    "name": "Han Xu キックオフで出た要確認事項…",
+    "idList": "l_ten",
+    "desc": "Han Xu キックオフで出た要確認事項を下記にまとめます。\n\n■DLC\n・早期購入特典としてコード封入の予定あり\n・どのように使用するのか？ フラワーはキャラクターに投票する票？\n⇒オンライン要素があるかどうか要確認。ある場合は、どのようなものか概要を確認\n\n■ネットワーク接続がなくても一通り遊べるか？\n※DLCを使う時にはネットワークが必要でも良いが、本編をクリアまでプレイするだけでもネットワークが必要か？\n\n■有料コンテンツの販売予定はあるか？\n\n■タイトル名の完成版は不自然",
+    "due": null,
+    "dueComplete": true,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/RpAbe2LJ",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "hjxBsHJY",
+    "name": "【PS5】壊滅の潮汐",
+    "idList": "l_ten",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/hjxBsHJY",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "IwZZLAZv",
+    "name": "これからの発売スケジュール",
+    "idList": "l_gia",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/IwZZLAZv",
+    "dateLastActivity": "2026-04-14T02:36:52.276Z"
+   },
+   {
+    "id": "RkhrDPpI",
+    "name": "【PS5】Farming Simulator 25: Beans & Alpacas Edition（2026年10月27日発売）",
+    "idList": "l_gia",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/RkhrDPpI",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "ykfZkcqd",
+    "name": "【PS5】Farming Simulator 28（2027年11月27日）",
+    "idList": "l_gia",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/ykfZkcqd",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "meNDrkGi",
+    "name": "in terms of Steam region locks",
+    "idList": "l_gia",
+    "desc": "Dear Diana,\n\nThank you again for the detailed breakdown and the insights regarding the region locks.\n\nWe just had a meeting with Steam and, going forward, we will offer the following region locks for all future GIANTS Steam products:\n\n- JP\n- KR\n- RU & MENA Tier #1\n- CIS & MENA Tier #2\n- THM\n- PRC (CN)\n- LATAM\n- SEA\n- ROW\n\nPlease find the detailed country split attached for your reference.",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/meNDrkGi",
+    "dateLastActivity": "2026-08-28T02:25:54.380Z"
+   },
+   {
+    "id": "yxH5o3Fk",
+    "name": "【PS5/NSW】ホグワーツレガシ価格改定版（2026年9月17日発売）",
+    "idList": "l_wb",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/yxH5o3Fk",
+    "dateLastActivity": "2026-08-25T08:05:06.434Z"
+   },
+   {
+    "id": "GQGiC2MY",
+    "name": "【NSW2】レゴ®バットマン™：レガシー・オブ・ザ・ダークナイト（2026年9月18日発売）",
+    "idList": "l_wb",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/GQGiC2MY",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "8UFvAiqn",
+    "name": "【NSW2】レゴ® ハリー・ポッター コレクション （2026年10月29日発売）",
+    "idList": "l_wb",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/8UFvAiqn",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "SltcKBeA",
+    "name": "【PS5/NSW】ファーミングキャンプ（2026年10月22日発売）※アジアはNSWのみ",
+    "idList": "l_rf",
+    "desc": "ファーミング・キャンプSteamページ（参照）\n\n[https://store.steampowered.com/app/2985880/Farming_Camp/](https://store.steampowered.com/app/2985880/Farming_Camp/ \"smartCard-inline\")",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/SltcKBeA",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "QuYdgDRJ",
+    "name": "【NSW、PS5】タクシーカオス２（2026年11月26日発売）※アジアはNSWのみ",
+    "idList": "l_rf",
+    "desc": "販売価格：3,850円（税込み）",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/QuYdgDRJ",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "djkwoVuN",
+    "name": "【PS5】トラック・ドライバー：ザ・ダッチ・コネクション（2026年11月26日発売）",
+    "idList": "l_rf",
+    "desc": "価格未定",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/djkwoVuN",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "5JyfqleT",
+    "name": "取り扱い説明書の用意",
+    "idList": "l_gsc",
+    "desc": "",
+    "due": null,
+    "dueComplete": true,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/5JyfqleT",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "PcryIlue",
+    "name": "2026年パリ推13.5億BP",
+    "idList": "l_goal",
+    "desc": "![image.webp](https://trello.com/y.webp)",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/PcryIlue",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   }
+  ]
+ },
+ {
+  "id": "b_todo",
+  "name": "TODO",
+  "shortUrl": "https://trello.com/b/MQFlv4ar",
+  "lists": [
+   {
+    "id": "l_td",
+    "name": "To-Do"
+   },
+   {
+    "id": "l_do",
+    "name": "Doing"
+   },
+   {
+    "id": "l_dn",
+    "name": "🎉 Done"
+   }
+  ],
+  "cards": [
+   {
+    "id": "t1",
+    "name": "住民税の支払い",
+    "idList": "l_td",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/t1",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "t2",
+    "name": "MeWork 試用",
+    "idList": "l_do",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/t2",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   },
+   {
+    "id": "t3",
+    "name": "完了済み",
+    "idList": "l_dn",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/t3",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   }
+  ]
+ },
+ {
+  "id": "b_life",
+  "name": "生活",
+  "shortUrl": "https://trello.com/b/uK2nSdpK",
+  "lists": [
+   {
+    "id": "l_sd",
+    "name": "副业"
+   },
+   {
+    "id": "l_fin",
+    "name": "Finish"
+   }
+  ],
+  "cards": [
+   {
+    "id": "s1",
+    "name": "AI 简报自动化",
+    "idList": "l_sd",
+    "desc": "",
+    "due": null,
+    "dueComplete": false,
+    "labels": [],
+    "shortUrl": "https://trello.com/c/s1",
+    "dateLastActivity": "2026-09-01T00:00:00.000Z"
+   }
+  ]
+ }
 ]

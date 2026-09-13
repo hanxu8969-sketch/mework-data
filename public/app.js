@@ -189,6 +189,76 @@ function taskRow(t) {
 }
 function esc(s) { const d = document.createElement('span'); d.textContent = s ?? ''; return d.innerHTML; }
 
+
+// 近期节点：把标题里写的发售日 / due 抽出来，按时间尺度分档。
+// 这是每天早上真正要看的东西 —— 不需要改任何 Trello 习惯。
+function renderMilestones(el) {
+  const tr = S.data?.trello;
+  if (!tr?.enabled || tr.error) return;
+  const today = todayStr();
+  const items = trelloLanes()
+    .filter((p) => !p.is_done_lane)
+    .flatMap((p) => p.tasks.filter((t) => t.status !== 'done' && t.milestone)
+      .map((t) => ({ ...t, _lane: p.title, _board: p.board })))
+    .sort((a, b) => a.milestone.localeCompare(b.milestone));
+  if (!items.length) return;
+
+  const sunday = addDays(today, 7 - (new Date(toUTC(today)).getUTCDay() || 7));
+  const nextSun = addDays(sunday, 7);
+  const monthEnd = addDays(today, 31);
+  const bucket = (d) => d < today ? '过期' : d <= sunday ? '本周' : d <= nextSun ? '下周' : d <= monthEnd ? '本月内' : '以后';
+  const ORDER = ['过期', '本周', '下周', '本月内', '以后'];
+  const ICON = { 过期: '🔴', 本周: '🔥', 下周: '📌', 本月内: '🗓️', 以后: '🕓' };
+
+  const groups = new Map();
+  for (const it of items) {
+    const b = bucket(it.milestone);
+    if (!groups.has(b)) groups.set(b, []);
+    groups.get(b).push(it);
+  }
+  const near = ORDER.slice(0, 4).reduce((n, k) => n + (groups.get(k)?.length || 0), 0);
+
+  const box = document.createElement('section'); box.className = 'ms';
+  box.innerHTML = `<div class="ms-head"><b>⏰ 近期节点</b>
+      <span class="badge">${near} 项在一个月内</span>
+      <span class="badge">共 ${items.length}</span></div>`;
+  const body = document.createElement('div'); body.className = 'ms-body';
+
+  for (const key of ORDER) {
+    const arr = groups.get(key);
+    if (!arr?.length) continue;
+    const later = key === '以后';
+    const grp = document.createElement('div'); grp.className = 'ms-grp' + (later ? ' later' : '');
+    const openDefault = !later;
+    const isOpen = (localStorage.getItem('mw-ms-' + key) ?? (openDefault ? '1' : '0')) === '1';
+    grp.innerHTML = `<div class="ms-grp-h" role="button" tabindex="0">
+        <span>${ICON[key]}</span><b>${key}</b><span class="badge">${arr.length}</span>
+        <span class="ms-caret">${isOpen ? '▾' : '▸'}</span></div>
+      <div class="ms-rows" ${isOpen ? '' : 'hidden'}>${arr.map((t) => {
+        const dd = diffDays(today, t.milestone);
+        const rel = dd === 0 ? '今天' : dd > 0 ? `${dd} 天后` : `逾期 ${-dd} 天`;
+        return `<a class="ms-row" href="${esc(t.url)}" target="_blank" rel="noopener">
+          <span class="ms-date ${dd < 0 ? 'over' : dd <= 7 ? 'soon' : ''}">${fmtMd(t.milestone)}</span>
+          <span class="ms-rel ${dd < 0 ? 'over' : ''}">${rel}</span>
+          <span class="ms-title">${esc(t.title)}</span>
+          <span class="badge">${esc(t._lane)}</span>
+          ${t.milestone_source === 'title' ? '<span class="badge src" title="日期取自卡片标题">标题</span>' : ''}
+        </a>`;
+      }).join('')}</div>`;
+    const h = $('.ms-grp-h', grp), rows = $('.ms-rows', grp);
+    const toggle = () => {
+      rows.hidden = !rows.hidden;
+      $('.ms-caret', grp).textContent = rows.hidden ? '▸' : '▾';
+      try { localStorage.setItem('mw-ms-' + key, rows.hidden ? '0' : '1'); } catch { }
+    };
+    h.onclick = toggle;
+    h.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
+    body.appendChild(grp);
+  }
+  box.appendChild(body);
+  el.appendChild(box);
+}
+
 // Trello 区：按列表分组的未完成卡片。只读——所有编辑都回 Trello 做。
 function renderTrelloSection(el) {
   const tr = S.data?.trello;
@@ -226,13 +296,29 @@ function renderTrelloSection(el) {
         <span class="badge">${p.open_count}</span>
         <span class="tl-board">${esc(p.board)}</span>
       </div>
-      <div class="tl-cards" ${open ? '' : 'hidden'}>${p.tasks.filter((t) => t.status !== 'done').map((t) => `
-        <a class="tl-card" href="${esc(t.url)}" target="_blank" rel="noopener">
-          <span class="tl-dot ${t.due && t.due < today ? 'over' : ''}"></span>
-          <span class="tl-name">${esc(t.title)}</span>
-          ${t.due ? `<span class="badge ${t.due < today ? 'due-over' : ''}">${fmtMd(t.due)}</span>` : ''}
-          ${(t.labels || []).slice(0, 2).map((l) => `<span class="badge">${esc(l)}</span>`).join('')}
-        </a>`).join('')}</div>`;
+      <div class="tl-cards" ${open ? '' : 'hidden'}>${p.tasks.filter((t) => t.status !== 'done').map((t, i) => `
+        <div class="tl-card" data-i="${i}">
+          <div class="tl-card-top">
+            <span class="tl-dot ${t.due && t.due < today ? 'over' : ''}"></span>
+            <span class="tl-name">${esc(t.title)}</span>
+            ${t.due ? `<span class="badge ${t.due < today ? 'due-over' : ''}">${fmtMd(t.due)}</span>` : ''}
+            ${(t.labels || []).slice(0, 3).map((l) => `<span class="badge lbl">${esc(l)}</span>`).join('')}
+            ${t.body ? '<span class="tl-more">说明 ▾</span>' : ''}
+            <a class="tl-open" href="${esc(t.url)}" target="_blank" rel="noopener" title="在 Trello 打开">↗</a>
+          </div>
+          ${t.body ? `<div class="tl-desc" hidden>${md(t.body)}</div>` : ''}
+        </div>`).join('')}</div>`;
+    // 点标题行展开说明；↗ 才跳 Trello
+    $$('.tl-card', lane).forEach((card) => {
+      const desc = $('.tl-desc', card), more = $('.tl-more', card);
+      if (!desc) return;
+      $('.tl-card-top', card).onclick = (e) => {
+        if (e.target.closest('.tl-open')) return;
+        desc.hidden = !desc.hidden;
+        more.textContent = desc.hidden ? '说明 ▾' : '收起 ▴';
+        card.classList.toggle('open', !desc.hidden);
+      };
+    });
     const h = $('.tl-lane-h', lane), body = $('.tl-cards', lane);
     const toggle = () => {
       body.hidden = !body.hidden;
@@ -254,6 +340,7 @@ function renderToday(el) {
   el.appendChild(pr);
   renderPushRow();
   // 任务全部来自 Trello（唯一事实源）；这里只做提醒与阅读，不再显示 MeWork 自有任务
+  renderMilestones(el);
   renderTrelloSection(el);
   renderBriefingPanel(el);
 }
@@ -447,17 +534,69 @@ function quickCreateAt(row, projectId, dateStr, clientX) {
 // ---------- Projects view ----------
 function renderProjects(el) {
   el.innerHTML = '';
-  const grid = document.createElement('div'); grid.className = 'pj-grid';
-  for (const p of S.data.projects) {
-    const card = document.createElement('div'); card.className = 'pj-card';
-    const open = p.tasks.filter((t) => t.status !== 'done').length;
-    card.innerHTML = `<h3>${esc(p.title)}</h3>
-      <div class="desc">${esc(p.body || '')}</div>
-      <div class="pline"><span class="badge">${p.status}</span> <span class="badge pri-${p.priority}">${(p.priority || '').toUpperCase()}</span>
-      <span class="badge">${open} 未完成 / ${p.tasks.length} 总数</span> <span class="badge">📎 ${p.artifacts.length}</span></div>`;
-    grid.appendChild(card);
+  const today = todayStr();
+  const lanes = trelloLanes();
+  const own = S.data.projects.filter((p) => p.source !== 'trello');
+
+  if (!lanes.length) {
+    el.innerHTML = '<div class="state-box">Trello 未连接或没有卡片</div>';
   }
-  el.appendChild(grid);
+
+  // 按看板分组，每条列表一张卡
+  const byBoard = new Map();
+  for (const p of lanes) {
+    if (!byBoard.has(p.board)) byBoard.set(p.board, []);
+    byBoard.get(p.board).push(p);
+  }
+  for (const [board, ps] of byBoard) {
+    const h = document.createElement('div'); h.className = 'section-h';
+    const total = ps.reduce((n, x) => n + x.open_count, 0);
+    h.innerHTML = `<h3>${esc(board)}</h3><span class="count">${total} 项未完成</span>`;
+    el.appendChild(h);
+
+    const grid = document.createElement('div'); grid.className = 'pj-grid';
+    for (const p of ps.filter((x) => !x.is_done_lane)) {
+      const idle = p.last_activity
+        ? Math.round((Date.now() - Date.parse(p.last_activity)) / 864e5) : null;
+      const ms = p.next_milestone;
+      const dd = ms ? diffDays(today, ms) : null;
+      // 停滞判定：60 天没动静且还有未完成
+      const stale = idle !== null && idle > 60 && p.open_count > 0;
+      const card = document.createElement('div');
+      card.className = 'pj-card' + (stale ? ' stale' : '') + (p.open_count === 0 ? ' empty' : '');
+      card.innerHTML = `
+        <div class="pj-top"><h3>${esc(p.title)}</h3>
+          <span class="pj-n ${p.open_count ? '' : 'zero'}">${p.open_count}</span></div>
+        <div class="pj-meta">
+          ${ms ? `<span class="badge ${dd < 0 ? 'due-over' : dd <= 14 ? 'ok' : ''}">下一节点 ${fmtMd(ms)}${dd >= 0 ? ` · ${dd} 天后` : ` · 逾期 ${-dd} 天`}</span>` : '<span class="badge">无节点日期</span>'}
+          ${idle !== null ? `<span class="badge ${stale ? 'warn' : ''}">${idle} 天前有动静</span>` : ''}
+        </div>
+        <div class="pj-list">${p.tasks.filter((t) => t.status !== 'done').slice(0, 4)
+          .map((t) => `<div class="pj-item">• ${esc(t.title)}</div>`).join('')
+          || '<div class="pj-item" style="opacity:.6">全部完成 ✓</div>'}
+          ${p.open_count > 4 ? `<div class="pj-item" style="opacity:.6">…还有 ${p.open_count - 4} 项</div>` : ''}
+        </div>
+        <a class="pj-open" href="${esc(p.url)}" target="_blank" rel="noopener">在 Trello 打开 ↗</a>`;
+      grid.appendChild(card);
+    }
+    el.appendChild(grid);
+  }
+
+  // MeWork 自有项目：只作为附件容器
+  const withArt = own.filter((p) => p.artifacts.length);
+  if (withArt.length) {
+    const h = document.createElement('div'); h.className = 'section-h';
+    h.innerHTML = '<h3>📎 附件</h3><span class="count">存放在 MeWork，不含任务</span>';
+    el.appendChild(h);
+    const grid = document.createElement('div'); grid.className = 'pj-grid';
+    for (const p of withArt) {
+      const card = document.createElement('div'); card.className = 'pj-card';
+      card.innerHTML = `<div class="pj-top"><h3>${esc(p.title)}</h3><span class="pj-n">${p.artifacts.length}</span></div>
+        <div class="pj-list">${p.artifacts.map((a) => `<div class="pj-item">📄 <a href="/api/files/${encodeURIComponent(a.path)}" target="_blank">${esc(a.label)}</a></div>`).join('')}</div>`;
+      grid.appendChild(card);
+    }
+    el.appendChild(grid);
+  }
 }
 
 // ---------- Drawer ----------

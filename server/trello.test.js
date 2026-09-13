@@ -101,3 +101,43 @@ t('已完成栏不进汇总', () => {
 });
 
 console.log(`\n✅ ${pass} passed`);
+
+// ---- 标题日期抽取（用户真实标题）----
+import { parseTitleDate } from './trello.js';
+console.log('\n标题日期抽取');
+let p2 = 0;
+const t2 = (n, f) => { f(); p2++; console.log('  ✓', n); };
+t2('日式全角括号内的発売日', () => {
+  assert.equal(parseTitleDate('【PS5/NSW】ホグワーツレガシ価格改定版（2026年9月17日発売）'), '2026-09-17');
+  assert.equal(parseTitleDate('【PS5】Farming Simulator 25: Beans & Alpacas Edition（2026年10月27日発売）'), '2026-10-27');
+  assert.equal(parseTitleDate('【NSW、PS5】タクシーカオス２（2026年11月26日発売）※アジアはNSWのみ'), '2026-11-26');
+});
+t2('无「発売」后缀也能抽', () => {
+  assert.equal(parseTitleDate('【PS5】Farming Simulator 28（2027年11月27日）'), '2027-11-27');
+  assert.equal(parseTitleDate('【PS5】2025年11月22日'), '2025-11-22');
+});
+t2('斜杠与短横格式', () => {
+  assert.equal(parseTitleDate('リリース 2026/10/27'), '2026-10-27');
+  assert.equal(parseTitleDate('release 2026-03-05'), '2026-03-05');
+});
+t2('无日期的标题不误判', () => {
+  ['Serenity Forge', 'in terms of Steam region locks', '【PS5】壊滅の潮汐',
+   '2P games', 'Taiko Studios', 'WBチケット'].forEach((x) => assert.equal(parseTitleDate(x), null, x));
+});
+t2('不存在的日期被拒绝', () => {
+  assert.equal(parseTitleDate('（2026年2月30日発売）'), null);
+  assert.equal(parseTitleDate('（2026年13月1日発売）'), null);
+});
+t2('milestone 落到 task 上，due 优先于标题', () => {
+  const b = [{ id: 'b', name: 'B', lists: [{ id: 'l', name: 'L' }], cards: [
+    { id: 'x', name: '【PS5】某作（2026年10月27日発売）', idList: 'l', due: null, dueComplete: false, labels: [], shortUrl: 'u' },
+    { id: 'y', name: '另一作（2026年12月1日発売）', idList: 'l', due: '2026-09-19T02:00:00.000Z', dueComplete: false, labels: [], shortUrl: 'u' },
+  ] }];
+  const [proj] = projectTrello(b, '2026-09-13');
+  const x = proj.tasks.find((t) => t.id === 'trello_x');
+  const y = proj.tasks.find((t) => t.id === 'trello_y');
+  assert.equal(x.milestone, '2026-10-27'); assert.equal(x.milestone_source, 'title');
+  assert.equal(y.milestone, '2026-09-19'); assert.equal(y.milestone_source, 'due'); // due 覆盖标题
+  assert.equal(proj.next_milestone, '2026-09-19');
+});
+console.log(`\n✅ 标题日期 ${p2} passed`);
