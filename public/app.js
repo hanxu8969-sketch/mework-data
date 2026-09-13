@@ -447,75 +447,96 @@ function renderToday(el) {
   renderMilestones(el);  // 近期节点
 }
 
-// ---------- 日程：按月分组的发售/节点日历 ----------
-// 原来是按天的甘特图，但节点跨度长达一年多、且多数卡片没有日期，
-// 按天铺开几乎全是空白。按月分组才是这批数据的正确尺度。
+// ---------- 日程：以项目为主轴的月度安排 ----------
+// 按月平铺会丢掉「哪个客户在什么时候」这层关系，对 BD 来说那才是重点。
+// 所以：顶部「项目 × 月份」网格看全局，下面每个项目按月排开。
 function renderCalendar(el) {
   el.innerHTML = '';
   const today = todayStr();
   const curMonth = today.slice(0, 7);
-  const items = trelloLanes().filter((p) => !p.is_done_lane)
-    .flatMap((p) => p.tasks.filter((t) => t.status !== 'done' && t.milestone)
-      .map((t) => ({ ...t, _lane: p.title, _board: p.board })))
-    .sort((a, b) => a.milestone.localeCompare(b.milestone));
-
-  const undated = trelloLanes().filter((p) => !p.is_done_lane)
-    .flatMap((p) => p.tasks.filter((t) => t.status !== 'done' && !t.milestone)
-      .map((t) => ({ ...t, _lane: p.title })));
-
-  if (!items.length) {
-    el.innerHTML = '<div class="state-box">还没有带日期的事项。<br>在 Trello 给卡片设 due，或把发售日写进标题（如「（2026年10月27日発売）」），这里就会出现。</div>';
+  const lanes = trelloLanes().filter((p) => !p.is_done_lane && p.open_count > 0);
+  if (!lanes.length) {
+    el.innerHTML = '<div class="state-box">没有未完成的事项。</div>';
     return;
   }
 
-  // 月份密度条
-  const byMonth = new Map();
-  for (const it of items) {
-    const m = it.milestone.slice(0, 7);
-    if (!byMonth.has(m)) byMonth.set(m, []);
-    byMonth.get(m).push(it);
-  }
-  const strip = document.createElement('div'); strip.className = 'cal-strip';
-  strip.innerHTML = [...byMonth].map(([m, arr]) => {
-    const past = m < curMonth;
-    return `<a class="cal-chip${m === curMonth ? ' now' : ''}${past ? ' past' : ''}" href="#m-${m}">
-      <span class="cal-chip-m">${+m.slice(5)}月</span>
-      <span class="cal-chip-y">${m.slice(0, 4)}</span>
-      <span class="cal-dots">${'●'.repeat(Math.min(arr.length, 5))}</span>
-      <span class="cal-chip-n">${arr.length}</span></a>`;
-  }).join('');
-  el.appendChild(strip);
+  // 每条线：按月分桶 + 未定日期
+  const rows = lanes.map((p) => {
+    const open = p.tasks.filter((t) => t.status !== 'done');
+    const months = new Map();
+    const undated = [];
+    for (const t of open) {
+      if (!t.milestone) { undated.push(t); continue; }
+      const m = t.milestone.slice(0, 7);
+      if (!months.has(m)) months.set(m, []);
+      months.get(m).push(t);
+    }
+    for (const arr of months.values()) arr.sort((a, b) => a.milestone.localeCompare(b.milestone));
+    return { p, months, undated, dated: open.length - undated.length };
+  }).sort((a, b) => b.dated - a.dated || b.p.open_count - a.p.open_count);
 
-  for (const [m, arr] of byMonth) {
-    const sec = document.createElement('section'); sec.className = 'cal-mo'; sec.id = `m-${m}`;
-    const label = `${m.slice(0, 4)}年${+m.slice(5)}月`;
-    sec.innerHTML = `<div class="cal-mo-h">
-        <b>${label}</b>${m === curMonth ? '<span class="badge soon">本月</span>' : ''}
-        <span class="badge">${arr.length} 项</span></div>`;
-    const list = document.createElement('div'); list.className = 'cal-rows';
-    list.innerHTML = arr.map((t) => {
-      const dd = diffDays(today, t.milestone);
-      const rel = dd === 0 ? '今天' : dd > 0 ? `${dd} 天后` : `${-dd} 天前`;
-      return `<a class="cal-row" href="${esc(t.url)}" target="_blank" rel="noopener">
-        <span class="cal-d">${+t.milestone.slice(8)}<small>日</small></span>
-        <span class="cal-t">${esc(t.title)}</span>
-        <span class="badge">${esc(t._lane)}</span>
-        <span class="cal-rel${dd < 0 ? ' past' : dd <= 14 ? ' soon' : ''}">${rel}</span>
-      </a>`;
-    }).join('');
-    sec.appendChild(list);
-    el.appendChild(sec);
+  const allMonths = [...new Set(rows.flatMap((r) => [...r.months.keys()]))].sort();
+
+  // ── 全局网格：行=项目，列=月份 ──
+  if (allMonths.length) {
+    const grid = document.createElement('section'); grid.className = 'gcal';
+    grid.innerHTML = `<div class="gcal-h"><b>🗓️ 项目 × 月份</b>
+      <span class="badge">${allMonths.length} 个月份</span></div>`;
+    const tbl = document.createElement('div'); tbl.className = 'gcal-tbl';
+    const maxN = Math.max(...rows.flatMap((r) => [...r.months.values()].map((a) => a.length)), 1);
+    tbl.innerHTML = `<div class="gcal-row head">
+        <span class="gcal-lane"></span>
+        ${allMonths.map((m) => `<span class="gcal-cell head${m === curMonth ? ' now' : ''}">
+          <b>${+m.slice(5)}月</b><small>${m.slice(2, 4)}</small></span>`).join('')}
+        <span class="gcal-cell head und">未定</span>
+      </div>` + rows.map((r) => `<a class="gcal-row" href="#p-${esc(r.p.id)}">
+        <span class="gcal-lane" title="${esc(r.p.title)}">${esc(r.p.title)}</span>
+        ${allMonths.map((m) => {
+          const n = r.months.get(m)?.length || 0;
+          const op = n ? (0.28 + 0.72 * (n / maxN)).toFixed(2) : 0;
+          return `<span class="gcal-cell${m === curMonth ? ' now' : ''}">${n
+            ? `<span class="gcal-dot" style="opacity:${op}">${n}</span>` : ''}</span>`;
+        }).join('')}
+        <span class="gcal-cell und">${r.undated.length ? `<span class="gcal-dot none">${r.undated.length}</span>` : ''}</span>
+      </a>`).join('');
+    grid.appendChild(tbl);
+    el.appendChild(grid);
   }
 
-  if (undated.length) {
-    const sec = document.createElement('section'); sec.className = 'cal-mo undated';
-    sec.innerHTML = `<div class="cal-mo-h"><b>未定日期</b><span class="badge">${undated.length} 项</span>
-      <span class="cal-note">在 Trello 设 due 或把日期写进标题即可排进上面</span></div>`;
-    const list = document.createElement('div'); list.className = 'cal-rows';
-    list.innerHTML = undated.map((t) => `<a class="cal-row" href="${esc(t.url)}" target="_blank" rel="noopener">
-        <span class="cal-d dash">—</span><span class="cal-t">${esc(t.title)}</span>
-        <span class="badge">${esc(t._lane)}</span></a>`).join('');
-    sec.appendChild(list);
+  // ── 每个项目一张卡，卡内按月排开 ──
+  for (const r of rows) {
+    const sec = document.createElement('section'); sec.className = 'pcal'; sec.id = `p-${r.p.id}`;
+    const next = r.p.next_milestone;
+    const dd = next ? diffDays(today, next) : null;
+    sec.innerHTML = `<div class="pcal-h">
+        <b>${esc(r.p.title)}</b>
+        <span class="badge">${r.p.open_count} 项</span>
+        ${next ? `<span class="badge ${dd < 0 ? 'st-critical' : dd <= 30 ? 'soon' : ''}">下一节点 ${fmtMd(next)}</span>` : ''}
+        <span class="pcal-board">${esc(r.p.board)}</span>
+        <a class="tl-open" href="${esc(r.p.url)}" target="_blank" rel="noopener" title="在 Trello 打开">↗</a>
+      </div>`;
+    const body = document.createElement('div'); body.className = 'pcal-body';
+    const blocks = [];
+    for (const [m, arr] of [...r.months].sort((a, b) => a[0].localeCompare(b[0]))) {
+      blocks.push(`<div class="pcal-mo${m === curMonth ? ' now' : ''}">
+        <div class="pcal-mo-l">${m.slice(0, 4)}<b>${+m.slice(5)}月</b>${m === curMonth ? '<span class="badge soon">本月</span>' : ''}</div>
+        <div class="pcal-items">${arr.map((t) => {
+          const d = diffDays(today, t.milestone);
+          return `<a class="pcal-i" href="${esc(t.url)}" target="_blank" rel="noopener">
+            <span class="pcal-d">${+t.milestone.slice(8)}日</span>
+            <span class="pcal-t">${esc(t.title)}</span>
+            <span class="cal-rel${d < 0 ? ' past' : d <= 14 ? ' soon' : ''}">${d === 0 ? '今天' : d > 0 ? `${d}天后` : `${-d}天前`}</span>
+          </a>`;
+        }).join('')}</div></div>`);
+    }
+    if (r.undated.length) {
+      blocks.push(`<div class="pcal-mo und">
+        <div class="pcal-mo-l"><b>未定日期</b></div>
+        <div class="pcal-items">${r.undated.map((t) => `<a class="pcal-i" href="${esc(t.url)}" target="_blank" rel="noopener">
+          <span class="pcal-d dash">—</span><span class="pcal-t">${esc(t.title)}</span></a>`).join('')}</div></div>`);
+    }
+    body.innerHTML = blocks.join('');
+    sec.appendChild(body);
     el.appendChild(sec);
   }
 }

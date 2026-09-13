@@ -324,37 +324,58 @@ button{font:inherit;color:inherit}
 .pj-item .badge.soon{color:var(--accent)}
 .pj-item.none{list-style:none;margin-left:-20px;opacity:.6}
 
-/* ── 日程（按月） ─────────────────────────── */
-.cal-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px}
-.cal-chip{flex:none;display:flex;flex-direction:column;align-items:center;gap:1px;
-  min-width:64px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
-  background:var(--panel);text-decoration:none;color:var(--ink)}
-.cal-chip.now{border-color:var(--series-1);box-shadow:inset 0 0 0 1px var(--series-1)}
-.cal-chip.past{opacity:.5}
-.cal-chip-m{font-size:14px;font-weight:700}
-.cal-chip-y{font-size:10px;color:var(--muted)}
-.cal-dots{font-size:7px;color:var(--series-1);letter-spacing:1px;line-height:1}
-.cal-chip-n{font-size:10px;color:var(--muted)}
-.cal-mo{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-  margin-bottom:12px;overflow:hidden}
-.cal-mo.undated{opacity:.9;border-style:dashed}
-.cal-mo-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.cal-mo-h .badge:last-of-type{margin-left:auto}
-.cal-note{font-size:11px;color:var(--muted);flex-basis:100%}
-.badge.soon{color:var(--series-1);font-weight:600}
-.cal-rows{display:flex;flex-direction:column}
-.cal-row{display:flex;align-items:center;gap:11px;padding:9px 14px;text-decoration:none;
-  color:var(--ink);font-size:13px;border-bottom:1px solid var(--line);min-height:42px}
-.cal-row:last-child{border-bottom:0}
-.cal-row:hover{background:var(--bg)}
-.cal-d{width:34px;flex:none;text-align:right;font-size:17px;font-weight:700;
-  font-variant-numeric:tabular-nums;color:var(--series-1)}
-.cal-d small{font-size:9px;font-weight:400;color:var(--muted);margin-left:1px}
-.cal-d.dash{color:var(--muted);font-size:14px}
-.cal-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cal-rel{font-size:11px;color:var(--muted);flex:none;min-width:52px;text-align:right}
+/* ── 日程：项目 × 月份 ─────────────────────── */
+.gcal{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  margin-bottom:16px;overflow:hidden}
+.gcal-h{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line)}
+.gcal-h .badge{margin-left:auto}
+.gcal-tbl{overflow-x:auto;padding:6px 0}
+.gcal-row{display:flex;align-items:center;min-width:max-content;text-decoration:none;color:var(--ink)}
+a.gcal-row:hover{background:var(--bg)}
+.gcal-row.head{border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:2px}
+.gcal-lane{position:sticky;left:0;background:var(--panel);width:150px;flex:none;
+  padding:6px 12px;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;z-index:2}
+a.gcal-row:hover .gcal-lane{background:var(--bg)}
+.gcal-cell{width:46px;flex:none;display:flex;align-items:center;justify-content:center;height:32px}
+.gcal-cell.head{flex-direction:column;gap:0;height:auto;font-size:11px;color:var(--muted)}
+.gcal-cell.head b{font-size:12px;color:var(--ink)}
+.gcal-cell.head small{font-size:9px}
+.gcal-cell.head.now b{color:var(--series-1)}
+.gcal-cell.now{background:rgba(42,120,214,.06)}
+.gcal-cell.und{width:52px}
+.gcal-dot{min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:var(--series-1);
+  color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.gcal-dot.none{background:var(--line);color:var(--muted)}
+
+/* 每个项目的月度安排 */
+.pcal{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  margin-bottom:12px;overflow:hidden;scroll-margin-top:70px}
+.pcal-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.pcal-board{margin-left:auto;font-size:11px;color:var(--muted)}
+.pcal-body{display:flex;flex-direction:column}
+.pcal-mo{display:flex;gap:12px;padding:9px 14px;border-bottom:1px solid var(--line)}
+.pcal-mo:last-child{border-bottom:0}
+.pcal-mo.now{background:rgba(42,120,214,.05)}
+.pcal-mo.und{opacity:.85}
+.pcal-mo-l{width:78px;flex:none;font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:1px}
+.pcal-mo-l b{font-size:13px;color:var(--ink)}
+.pcal-items{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pcal-i{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink);
+  font-size:12.5px;padding:4px 6px;border-radius:6px;min-height:30px}
+.pcal-i:hover{background:var(--bg)}
+.pcal-d{width:34px;flex:none;font-weight:700;color:var(--series-1);font-variant-numeric:tabular-nums;font-size:12px}
+.pcal-d.dash{color:var(--muted);font-weight:400}
+.pcal-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-rel{font-size:11px;color:var(--muted);flex:none;min-width:48px;text-align:right}
 .cal-rel.soon{color:var(--series-1);font-weight:600}
-.cal-rel.past{color:var(--muted);opacity:.7}
+.cal-rel.past{opacity:.65}
+.badge.soon{color:var(--series-1);font-weight:600}
+@media (max-width:700px){
+  .gcal-lane{width:104px}
+  .pcal-mo{flex-direction:column;gap:4px}
+  .pcal-mo-l{width:auto;flex-direction:row;align-items:baseline;gap:5px}
+  .pcal-t{white-space:normal}
+}
 
 /* ── 周回顾 ─────────────────────────────── */
 .rv-title{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
