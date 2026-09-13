@@ -84,6 +84,34 @@ export async function readBriefing(store, date) {
   return { ...meta, body, revision: f.revision };
 }
 
+/**
+ * 取最近一份「有内容」的简报。
+ * 研究只在电脑开着时才跑，当天那份常常只是空骨架 —— 与其显示"未生成"，
+ * 不如把最近一份真实内容拿出来，并如实标注它是哪天的、隔了几天。
+ */
+export async function readLatestBriefing(store, today = jstDate()) {
+  const todays = await readBriefing(store, today).catch(() => null);
+  if (todays && (todays.has_game_report || todays.has_ai_report)) {
+    return { ...todays, is_today: true, stale_days: 0 };
+  }
+  const files = await store.list('content/briefings').catch(() => []);
+  const dates = files
+    .filter((f) => !f.dir && /^\d{4}-\d{2}-\d{2}\.md$/.test(f.name))
+    .map((f) => f.name.slice(0, 10))
+    .filter((d) => d <= today)
+    .sort()
+    .reverse();
+  for (const d of dates) {
+    if (d === today) continue;
+    const b = await readBriefing(store, d).catch(() => null);
+    if (b && (b.has_game_report || b.has_ai_report)) {
+      const days = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${d}T00:00:00Z`)) / 86400000);
+      return { ...b, is_today: false, stale_days: days };
+    }
+  }
+  return todays ? { ...todays, is_today: true, stale_days: 0 } : null;
+}
+
 /** 周五：生成下周优先任务（这个是可执行计划，仍以任务形式落到看板） */
 export async function runWeeklyPlan(store, date = jstDate()) {
   const { projects } = await bootstrap(store);

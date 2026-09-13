@@ -108,9 +108,10 @@ function renderBriefingPanel(el) {
     el.appendChild(box); return;
   }
   const open = localStorage.getItem('mw-brief-open') !== '0';
+  const stale = b.stale_days > 0;
   box.innerHTML = `<div class="brief-head" role="button" tabindex="0">
-      <b>📰 今日简报</b>
-      <span class="badge">${esc(b.date)}</span>
+      <b>📰 ${stale ? '最近一份简报' : '今日简报'}</b>
+      <span class="badge ${stale ? 'warn' : ''}">${esc(b.date)}${stale ? ` · ${b.stale_days} 天前` : ''}</span>
       ${b.has_game_report ? '<span class="badge ok">🎮 游戏</span>' : '<span class="badge warn">🎮 未生成</span>'}
       ${b.has_ai_report ? '<span class="badge ok">🤖 AI</span>' : '<span class="badge warn">🤖 未生成</span>'}
       <span class="brief-toggle">${open ? '收起' : '展开'}</span>

@@ -250,8 +250,11 @@ export async function handleApi(store, method, pathname, query, jsonBody, rawBod
   try {
     if (method === 'GET' && pathname === '/api/bootstrap') return { status: 200, json: await bootstrap(store) };
     if (method === 'GET' && pathname === '/api/briefing') {
-      const { readBriefing, jstDate } = await import('./briefing.js');
-      const b = await readBriefing(store, query.date || jstDate());
+      const { readBriefing, readLatestBriefing, jstDate } = await import('./briefing.js');
+      // 指定日期就精确取；不指定则取最近一份有内容的（研究不是每天都跑得成）
+      const b = query.date
+        ? await readBriefing(store, query.date)
+        : await readLatestBriefing(store, jstDate());
       return { status: 200, json: b || { missing: true, date: query.date || jstDate() } };
     }
     if (method === 'PUT' && pathname === '/api/briefing') {

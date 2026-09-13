@@ -68,4 +68,5 @@ const server = http.createServer(async (req, res) => {
     send(500, JSON.stringify({ error: e.message }));
   }
 });
-server.listen(8787, () => console.log('MeWork dev on http://localhost:8787'));
+const PORT = Number(process.env.PORT) || 8787;
+server.listen(PORT, () => console.log(`MeWork dev on http://localhost:${PORT}`));
