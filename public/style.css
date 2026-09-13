@@ -323,3 +323,60 @@ button{font:inherit;color:inherit}
 .pj-item .badge{margin-left:6px}
 .pj-item .badge.soon{color:var(--accent)}
 .pj-item.none{list-style:none;margin-left:-20px;opacity:.6}
+
+/* ── 日程（按月） ─────────────────────────── */
+.cal-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px}
+.cal-chip{flex:none;display:flex;flex-direction:column;align-items:center;gap:1px;
+  min-width:64px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;
+  background:var(--panel);text-decoration:none;color:var(--ink)}
+.cal-chip.now{border-color:var(--series-1);box-shadow:inset 0 0 0 1px var(--series-1)}
+.cal-chip.past{opacity:.5}
+.cal-chip-m{font-size:14px;font-weight:700}
+.cal-chip-y{font-size:10px;color:var(--muted)}
+.cal-dots{font-size:7px;color:var(--series-1);letter-spacing:1px;line-height:1}
+.cal-chip-n{font-size:10px;color:var(--muted)}
+.cal-mo{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  margin-bottom:12px;overflow:hidden}
+.cal-mo.undated{opacity:.9;border-style:dashed}
+.cal-mo-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.cal-mo-h .badge:last-of-type{margin-left:auto}
+.cal-note{font-size:11px;color:var(--muted);flex-basis:100%}
+.badge.soon{color:var(--series-1);font-weight:600}
+.cal-rows{display:flex;flex-direction:column}
+.cal-row{display:flex;align-items:center;gap:11px;padding:9px 14px;text-decoration:none;
+  color:var(--ink);font-size:13px;border-bottom:1px solid var(--line);min-height:42px}
+.cal-row:last-child{border-bottom:0}
+.cal-row:hover{background:var(--bg)}
+.cal-d{width:34px;flex:none;text-align:right;font-size:17px;font-weight:700;
+  font-variant-numeric:tabular-nums;color:var(--series-1)}
+.cal-d small{font-size:9px;font-weight:400;color:var(--muted);margin-left:1px}
+.cal-d.dash{color:var(--muted);font-size:14px}
+.cal-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-rel{font-size:11px;color:var(--muted);flex:none;min-width:52px;text-align:right}
+.cal-rel.soon{color:var(--series-1);font-weight:600}
+.cal-rel.past{color:var(--muted);opacity:.7}
+
+/* ── 周回顾 ─────────────────────────────── */
+.rv-title{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.rv-title h2{margin:0;font-size:19px}
+.rv-date{color:var(--muted);font-size:12px}
+.rv{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  margin-bottom:12px;overflow:hidden}
+.rv.warn{border-color:var(--st-warning)}
+.rv-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.rv-sub{margin-left:auto;font-size:11px;color:var(--muted)}
+.rv-body{display:flex;flex-direction:column}
+.rv-row{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;
+  border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:40px}
+.rv-row:last-child{border-bottom:0}
+a.rv-row:hover{background:var(--bg)}
+.rv-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv-when{font-size:11px;color:var(--muted);flex:none}
+.rv-when.bad{color:var(--st-warning);font-weight:600}
+.rv-when.soon{color:var(--series-1);font-weight:600}
+.rv-empty{padding:16px 14px;font-size:12.5px;color:var(--muted);text-align:center}
+@media (max-width:700px){
+  .cal-row{flex-wrap:wrap;row-gap:3px}
+  .cal-t{flex-basis:calc(100% - 45px);white-space:normal}
+  .rv-row{flex-wrap:wrap;row-gap:3px}
+}

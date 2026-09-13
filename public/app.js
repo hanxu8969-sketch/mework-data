@@ -447,190 +447,141 @@ function renderToday(el) {
   renderMilestones(el);  // 近期节点
 }
 
-// ---------- Timeline ----------
-function ensureTlRange() {
-  if (S.tlStart) return;
-  const t = todayStr();
-  let min = addDays(t, -7), max = addDays(t, 30);
-  for (const x of allTasks()) {
-    if (x.start && x.start < min) min = x.start;
-    if (x.due && x.due > max) max = x.due;
-  }
-  S.tlStart = min; S.tlDays = diffDays(min, max) + 7;
-}
-const COL = 34, LABEL_W = 170;
-
-function renderTimeline(el) {
-  ensureTlRange();
+// ---------- 日程：按月分组的发售/节点日历 ----------
+// 原来是按天的甘特图，但节点跨度长达一年多、且多数卡片没有日期，
+// 按天铺开几乎全是空白。按月分组才是这批数据的正确尺度。
+function renderCalendar(el) {
   el.innerHTML = '';
-  const wrap = document.createElement('div'); wrap.className = 'tl-wrap';
-  const inner = document.createElement('div'); inner.className = 'tl-inner';
-  inner.style.width = LABEL_W + S.tlDays * COL + 'px';
-  wrap.appendChild(inner);
-
-  // header
-  const head = document.createElement('div'); head.className = 'tl-head';
-  const corner = document.createElement('div'); corner.className = 'tl-corner';
-  corner.style.width = LABEL_W + 'px'; corner.textContent = '项目 / 任务';
-  head.appendChild(corner);
   const today = todayStr();
-  for (let i = 0; i < S.tlDays; i++) {
-    const d = addDays(S.tlStart, i);
-    const day = document.createElement('div'); day.className = 'tl-day';
-    day.style.width = COL + 'px';
-    const dow = new Date(toUTC(d)).getUTCDay();
-    if (dow === 0 || dow === 6) day.classList.add('we');
-    if (d === today) day.classList.add('today');
-    day.textContent = fmtMd(d);
-    head.appendChild(day);
-  }
-  inner.appendChild(head);
+  const curMonth = today.slice(0, 7);
+  const items = trelloLanes().filter((p) => !p.is_done_lane)
+    .flatMap((p) => p.tasks.filter((t) => t.status !== 'done' && t.milestone)
+      .map((t) => ({ ...t, _lane: p.title, _board: p.board })))
+    .sort((a, b) => a.milestone.localeCompare(b.milestone));
 
-  // today line
-  const ti = diffDays(S.tlStart, today);
-  if (ti >= 0 && ti < S.tlDays) {
-    const line = document.createElement('div'); line.className = 'tl-todayline';
-    line.style.left = LABEL_W + ti * COL + COL / 2 + 'px';
-    inner.appendChild(line);
+  const undated = trelloLanes().filter((p) => !p.is_done_lane)
+    .flatMap((p) => p.tasks.filter((t) => t.status !== 'done' && !t.milestone)
+      .map((t) => ({ ...t, _lane: p.title })));
+
+  if (!items.length) {
+    el.innerHTML = '<div class="state-box">还没有带日期的事项。<br>在 Trello 给卡片设 due，或把发售日写进标题（如「（2026年10月27日発売）」），这里就会出现。</div>';
+    return;
   }
 
-  // Timeline 只放有日期的东西；Trello 卡片多数没有 due，只有设了 due 的才会出现
-  const timelineProjects = activeProjects().filter((p) => p.source !== 'trello' || p.tasks.some((t) => t.due));
-  for (const p of timelineProjects) {
-    const ph = document.createElement('div'); ph.className = 'tl-proj-h';
-    const closed = S.collapsed.has(p.id);
-    ph.innerHTML = `<div class="ph-inner"><span>${closed ? '▸' : '▾'}</span> ${esc(p.title)} <span class="count" style="color:var(--muted);font-weight:400">${p.tasks.filter((t) => t.status !== 'done').length} 未完成</span></div>`;
-    ph.onclick = () => { closed ? S.collapsed.delete(p.id) : S.collapsed.add(p.id); render(); };
-    inner.appendChild(ph);
-    if (closed) continue;
-    const lanes = sortTasks([...p.tasks.map((t) => ({ ...t, _project: p }))]).filter((t) => !(p.source === 'trello' && !t.due));
-    for (const t of lanes) {
-      const row = document.createElement('div'); row.className = 'tl-row';
-      const lab = document.createElement('div'); lab.className = 'rowlabel';
-      lab.style.width = LABEL_W + 'px'; lab.textContent = t.title; lab.title = t.title;
-      lab.onclick = () => (t.read_only ? window.open(t.url, '_blank', 'noopener') : openDrawer(t.id, t.project_id));
-      row.appendChild(lab);
-      row.ondblclick = (e) => {
-        if (e.target !== row) return;
-        const dayIdx = Math.floor((e.offsetX + (e.target === row ? 0 : LABEL_W) - LABEL_W) / COL);
-        quickCreateAt(row, p.id, addDays(S.tlStart, Math.max(0, dayIdx)), e.clientX);
-      };
-      const start = t.start || t.due, due = t.due || t.start;
-      if (start && due) row.appendChild(makeBar(t, start, due));
-      inner.appendChild(row);
-    }
-    // empty lane for creating new tasks in this project
-    const emptyRow = document.createElement('div'); emptyRow.className = 'tl-row';
-    const el2 = document.createElement('div'); el2.className = 'rowlabel'; el2.style.width = LABEL_W + 'px';
-    el2.textContent = '＋ 双击空白日期快速创建'; el2.style.opacity = .6;
-    emptyRow.appendChild(el2);
-    emptyRow.ondblclick = (e) => {
-      const rect = emptyRow.getBoundingClientRect();
-      const dayIdx = Math.floor((e.clientX - rect.left + emptyRow.parentElement.parentElement.scrollLeft - LABEL_W) / COL);
-      if (dayIdx >= 0) quickCreateAt(emptyRow, p.id, addDays(S.tlStart, dayIdx), e.clientX);
-    };
-    inner.appendChild(emptyRow);
+  // 月份密度条
+  const byMonth = new Map();
+  for (const it of items) {
+    const m = it.milestone.slice(0, 7);
+    if (!byMonth.has(m)) byMonth.set(m, []);
+    byMonth.get(m).push(it);
+  }
+  const strip = document.createElement('div'); strip.className = 'cal-strip';
+  strip.innerHTML = [...byMonth].map(([m, arr]) => {
+    const past = m < curMonth;
+    return `<a class="cal-chip${m === curMonth ? ' now' : ''}${past ? ' past' : ''}" href="#m-${m}">
+      <span class="cal-chip-m">${+m.slice(5)}月</span>
+      <span class="cal-chip-y">${m.slice(0, 4)}</span>
+      <span class="cal-dots">${'●'.repeat(Math.min(arr.length, 5))}</span>
+      <span class="cal-chip-n">${arr.length}</span></a>`;
+  }).join('');
+  el.appendChild(strip);
+
+  for (const [m, arr] of byMonth) {
+    const sec = document.createElement('section'); sec.className = 'cal-mo'; sec.id = `m-${m}`;
+    const label = `${m.slice(0, 4)}年${+m.slice(5)}月`;
+    sec.innerHTML = `<div class="cal-mo-h">
+        <b>${label}</b>${m === curMonth ? '<span class="badge soon">本月</span>' : ''}
+        <span class="badge">${arr.length} 项</span></div>`;
+    const list = document.createElement('div'); list.className = 'cal-rows';
+    list.innerHTML = arr.map((t) => {
+      const dd = diffDays(today, t.milestone);
+      const rel = dd === 0 ? '今天' : dd > 0 ? `${dd} 天后` : `${-dd} 天前`;
+      return `<a class="cal-row" href="${esc(t.url)}" target="_blank" rel="noopener">
+        <span class="cal-d">${+t.milestone.slice(8)}<small>日</small></span>
+        <span class="cal-t">${esc(t.title)}</span>
+        <span class="badge">${esc(t._lane)}</span>
+        <span class="cal-rel${dd < 0 ? ' past' : dd <= 14 ? ' soon' : ''}">${rel}</span>
+      </a>`;
+    }).join('');
+    sec.appendChild(list);
+    el.appendChild(sec);
   }
 
-  const ext = document.createElement('div'); ext.className = 'tl-extend';
-  const back = document.createElement('button'); back.className = 'btn ghost'; back.textContent = '← 向前 30 天';
-  const fwd = document.createElement('button'); fwd.className = 'btn ghost'; fwd.textContent = '向后 30 天 →';
-  back.onclick = () => { S.tlStart = addDays(S.tlStart, -30); S.tlDays += 30; const sl = wrap.scrollLeft; render(); $('.tl-wrap').scrollLeft = sl + 30 * COL; };
-  fwd.onclick = () => { S.tlDays += 30; const sl = wrap.scrollLeft; render(); $('.tl-wrap').scrollLeft = sl; };
-  el.appendChild(wrap);
-  el.appendChild(ext); ext.append(back, fwd);
-
-  // initial scroll to ~today-3
-  requestAnimationFrame(() => {
-    if (!wrap._scrolled) { wrap.scrollLeft = Math.max(0, (ti - 3) * COL); wrap._scrolled = true; }
-  });
+  if (undated.length) {
+    const sec = document.createElement('section'); sec.className = 'cal-mo undated';
+    sec.innerHTML = `<div class="cal-mo-h"><b>未定日期</b><span class="badge">${undated.length} 项</span>
+      <span class="cal-note">在 Trello 设 due 或把日期写进标题即可排进上面</span></div>`;
+    const list = document.createElement('div'); list.className = 'cal-rows';
+    list.innerHTML = undated.map((t) => `<a class="cal-row" href="${esc(t.url)}" target="_blank" rel="noopener">
+        <span class="cal-d dash">—</span><span class="cal-t">${esc(t.title)}</span>
+        <span class="badge">${esc(t._lane)}</span></a>`).join('');
+    sec.appendChild(list);
+    el.appendChild(sec);
+  }
 }
 
-function makeBar(t, start, due) {
-  const bar = document.createElement('div');
-  bar.className = 'tl-bar' + (t.status === 'done' ? ' done' : t.status === 'blocked' ? ' blocked' : '') + (t.read_only ? ' ro' : '');
-  bar.tabIndex = 0;
-  bar.setAttribute('aria-label', `${t.title} ${start} 至 ${due}`);
-  const i0 = diffDays(S.tlStart, start), i1 = diffDays(S.tlStart, due);
-  bar.style.left = LABEL_W + i0 * COL + 2 + 'px';
-  bar.style.width = Math.max(1, i1 - i0 + 1) * COL - 4 + 'px';
+// ---------- 周回顾（PDCA 的 Check）----------
+function renderReview(el) {
+  el.innerHTML = '';
+  const today = todayStr();
+  const lanes = trelloLanes().filter((p) => !p.is_done_lane);
+  const days = (iso) => iso ? Math.round((Date.now() - Date.parse(iso)) / 864e5) : null;
 
-  // Trello 卡片只读：不给勾选框、不给缩放手柄、不能拖动，点击回 Trello
-  if (t.read_only) {
-    bar.innerHTML = `<span>📋 ${esc(t.title)}</span>`;
-    bar.title = `${t.title}（Trello · 点击打开）`;
-    const open = () => window.open(t.url, '_blank', 'noopener');
-    bar.onclick = open;
-    bar.onkeydown = (e) => { if (e.key === 'Enter') open(); };
-    return bar;
+  const moved = [], stalled = [];
+  for (const p of lanes) {
+    const d = days(p.last_activity);
+    if (d === null) continue;
+    if (d <= 7) moved.push({ p, d });
+    else if (d > 60 && p.open_count > 0) stalled.push({ p, d });
   }
+  moved.sort((a, b) => a.d - b.d);
+  stalled.sort((a, b) => b.d - a.d);
 
-  bar.innerHTML = `<button class="bchk ${t.status === 'done' ? 'on' : ''}" aria-label="完成/重开"></button><span>${esc(t.title)}</span><div class="h l"></div><div class="h r"></div>`;
-  $('.bchk', bar).onclick = (e) => { e.stopPropagation(); toggleDone(t); };
-  bar.onkeydown = (e) => {
-    if (e.key === 'Enter') openDrawer(t.id, t.project_id);
-    if (e.key === ' ') { e.preventDefault(); toggleDone(t); }
+  const next14 = lanes.flatMap((p) => p.tasks
+    .filter((t) => t.status !== 'done' && t.milestone && t.milestone >= today && t.milestone <= addDays(today, 14))
+    .map((t) => ({ ...t, _lane: p.title })))
+    .sort((a, b) => a.milestone.localeCompare(b.milestone));
+
+  const inbox = S.data?.trello?.inbox?.cards || [];
+  const inboxOld = inbox.filter((c) => (days(c.last_activity) ?? 0) > 14);
+
+  const sec = (title, sub, rows, empty, cls = '') => {
+    const box = document.createElement('section'); box.className = 'rv ' + cls;
+    box.innerHTML = `<div class="rv-h"><b>${title}</b><span class="badge">${rows.length}</span>
+        ${sub ? `<span class="rv-sub">${esc(sub)}</span>` : ''}</div>
+      <div class="rv-body">${rows.length ? rows.join('') : `<div class="rv-empty">${empty}</div>`}</div>`;
+    el.appendChild(box);
   };
 
-  // drag = move both; handles resize start/due; preview only, submit on drop, rollback on fail
-  let mode = null, x0 = 0, d0 = 0, moved = false, longTimer = null, armed = false;
-  const isCoarse = matchMedia('(pointer:coarse)').matches;
-  bar.onpointerdown = (e) => {
-    mode = e.target.classList.contains('l') ? 'l' : e.target.classList.contains('r') ? 'r' : 'm';
-    x0 = e.clientX; d0 = 0; moved = false; armed = !isCoarse;
-    if (isCoarse) longTimer = setTimeout(() => { armed = true; bar.style.opacity = .8; }, 250);
-    bar.setPointerCapture(e.pointerId);
-  };
-  bar.onpointermove = (e) => {
-    if (mode === null || !armed) return;
-    d0 = Math.round((e.clientX - x0) / COL);
-    if (d0 !== 0) moved = true;
-    const ni0 = mode === 'r' ? i0 : i0 + d0;
-    const ni1 = mode === 'l' ? i1 : i1 + d0;
-    if (ni1 < ni0) return; // 范围不可反转
-    bar.style.left = LABEL_W + ni0 * COL + 2 + 'px';
-    bar.style.width = (ni1 - ni0 + 1) * COL - 4 + 'px';
-  };
-  bar.onpointerup = async (e) => {
-    clearTimeout(longTimer); bar.style.opacity = '';
-    const m = mode; mode = null;
-    if (!moved) { if (!e.target.classList.contains('bchk')) openDrawer(t.id, t.project_id); return; }
-    let ns = start, nd = due;
-    if (m !== 'r') ns = addDays(start, d0);
-    if (m !== 'l') nd = addDays(due, d0);
-    if (m === 'l') ns = addDays(start, d0);
-    if (toUTC(nd) < toUTC(ns)) { render(); return; }
-    try {
-      const r = await api('PATCH', `/api/tasks/${t.id}`, {
-        operation_id: opid(), project_id: t.project_id, expected_revision: t.revision,
-        changes: { start: ns, due: nd },
-      });
-      upsertTask(r.record, r.revision); render(); toast(`已改期 ${fmtMd(ns)}–${fmtMd(nd)} ✓`);
-    } catch (err2) { render(); handleWriteError(err2); }
-  };
-  return bar;
-}
+  const head = document.createElement('div'); head.className = 'rv-title';
+  head.innerHTML = `<h2>本周检视</h2><span class="rv-date">${today}</span>`;
+  el.appendChild(head);
 
-function quickCreateAt(row, projectId, dateStr, clientX) {
-  $$('.tl-qc').forEach((x) => x.remove());
-  const box = document.createElement('div'); box.className = 'tl-qc';
-  box.style.left = Math.min(clientX, innerWidth - 260) + 'px';
-  box.style.top = row.getBoundingClientRect().bottom + scrollY + 4 + 'px';
-  box.innerHTML = `<input type="text" placeholder="${dateStr} 新任务标题…" aria-label="新任务标题"><button class="btn">建</button>`;
-  document.body.appendChild(box);
-  const inp = $('input', box); inp.focus();
-  const close = () => { box.remove(); document.removeEventListener('pointerdown', out, true); };
-  const out = (e) => { if (!box.contains(e.target)) close(); };
-  document.addEventListener('pointerdown', out, true);
-  const go = async () => {
-    const title = inp.value.trim(); if (!title) return close();
-    try {
-      const r = await api('POST', '/api/tasks', { operation_id: opid(), task: { project_id: projectId, title, start: dateStr, due: dateStr } });
-      upsertTask(r.record, r.revision); close(); render(); toast('已创建 ✓');
-    } catch (e) { toast(`创建失败：${e.message}`, true); }
-  };
-  $('button', box).onclick = go;
-  inp.onkeydown = (e) => { if (e.key === 'Enter') go(); if (e.key === 'Escape') close(); };
+  sec('✅ 本周动过', '最近 7 天有活动', moved.map(({ p, d }) =>
+    `<div class="rv-row"><span class="rv-name">${esc(p.title)}</span>
+      <span class="badge">${p.open_count} 项未完成</span>
+      <span class="rv-when">${d === 0 ? '今天' : `${d} 天前`}</span></div>`),
+  '本周没有任何一条线有动静 —— 值得警惕');
+
+  sec('⚠️ 停滞', '超 60 天无动静且仍有未完成', stalled.map(({ p, d }) =>
+    `<div class="rv-row bad"><span class="rv-name">${esc(p.title)}</span>
+      <span class="badge">${p.open_count} 项未完成</span>
+      <span class="rv-when bad">${d} 天前</span></div>`),
+  '没有停滞的线 ✓', 'warn');
+
+  sec('📌 未来两周节点', '', next14.map((t) => {
+    const dd = diffDays(today, t.milestone);
+    return `<a class="rv-row" href="${esc(t.url)}" target="_blank" rel="noopener">
+      <span class="rv-name">${esc(t.title)}</span>
+      <span class="badge">${esc(t._lane)}</span>
+      <span class="rv-when soon">${fmtMd(t.milestone)} · ${dd === 0 ? '今天' : `${dd} 天后`}</span></a>`;
+  }), '未来两周没有节点');
+
+  sec('📥 收件箱积压', '超 14 天没碰过', inboxOld.map((c) =>
+    `<a class="rv-row" href="${esc(c.url)}" target="_blank" rel="noopener">
+      <span class="rv-name">${esc(c.title)}</span>
+      <span class="rv-when">${days(c.last_activity)} 天前</span></a>`),
+  '收件箱都是新鲜的 ✓');
 }
 
 // ---------- Projects view ----------
@@ -937,7 +888,8 @@ function render() {
   if (!S.data) return;
   if (S.view === 'brief') renderBriefView(el);
   if (S.view === 'today') renderToday(el);
-  if (S.view === 'timeline') renderTimeline(el);
+  if (S.view === 'calendar') renderCalendar(el);
+  if (S.view === 'review') renderReview(el);
   if (S.view === 'projects') renderProjects(el);
 }
 load();
