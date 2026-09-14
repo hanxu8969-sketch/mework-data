@@ -199,7 +199,7 @@ function renderMilestones(el) {
     return `<a class="row link" href="${esc(t.url)}" target="_blank" rel="noopener">
       <div class="row-main">
         <span class="date${dd < 0 ? ' bad' : dd <= 7 ? ' soon' : ''}">${fmtMd(t.milestone)}</span>
-        <span class="kind k-${t.milestone_source}">${t.milestone_source === 'title' ? '発売' : '期限'}</span>
+        <span class="kind k-${t.milestone_source}" title="${t.milestone_source === 'title' ? '取自卡片标题，MeWork 未核实' : 'Trello 卡片的 due，是你的任务期限'}">${t.milestone_source === 'title' ? '卡片' : '期限'}</span>
         <span class="ttl">${esc(t.title)}</span>
         <span class="lane">${esc(t._lane)}</span>
         <span class="meta">${dd === 0 ? '今天' : dd > 0 ? `${dd} 天后` : `逾期 ${-dd} 天`}</span>
@@ -253,7 +253,7 @@ function renderCalendar(el) {
   // ── 全局网格：行=项目，列=月份 ──
   if (allMonths.length) {
     const grid = document.createElement('section'); grid.className = 'gcal';
-    grid.innerHTML = `<div class="card-h gcal-h"><h3>项目 × 月份</h3><span class="sub">数字为该月事项数</span></div>`;
+    grid.innerHTML = `<div class="card-h gcal-h"><h3>项目 × 月份</h3><span class="sub">数字为该月事项数 · 日期取自 Trello，未经核实</span></div>`;
     const tbl = document.createElement('div'); tbl.className = 'gcal-tbl';
     const maxN = Math.max(...rows.flatMap((r) => [...r.months.values()].map((a) => a.length)), 1);
     tbl.innerHTML = `<div class="gcal-row head">
@@ -296,7 +296,7 @@ function renderCalendar(el) {
           const d = diffDays(today, t.milestone);
           return `<a class="pcal-i" href="${esc(t.url)}" target="_blank" rel="noopener">
             <span class="pcal-d">${+t.milestone.slice(8)}日</span>
-            <span class="kind k-${t.milestone_source}">${t.milestone_source === 'title' ? '発売' : '期限'}</span>
+            <span class="kind k-${t.milestone_source}" title="${t.milestone_source === 'title' ? '取自卡片标题，MeWork 未核实' : 'Trello 卡片的 due，是你的任务期限'}">${t.milestone_source === 'title' ? '卡片' : '期限'}</span>
             <span class="pcal-t">${esc(t.title)}</span>
             <span class="cal-rel${d < 0 ? ' past' : d <= 14 ? ' soon' : ''}">${d === 0 ? '今天' : d > 0 ? `${d}天后` : `${-d}天前`}</span>
           </a>`;
