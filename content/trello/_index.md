@@ -2,13 +2,13 @@
 title: Trello 总览
 source: trello
 open_total: 28
-synced_at: 2026-09-15
+synced_at: 2026-09-16
 ---
 
 
 # Trello 总览
 
-未完成合计 **28** 项 · 同步于 2026-09-15
+未完成合计 **28** 项 · 同步于 2026-09-16
 
 ## 近期节点
 
@@ -35,12 +35,12 @@ synced_at: 2026-09-15
 - [[Trello/【ワーナーブラザーズ】|【ワーナーブラザーズ】]] — 3 项（下一节点 2026-09-17）
 - [[Trello/【新規開拓】|【新規開拓】]] — 3 项
 - [[Trello/TGS2026|TGS2026]] — 2 项（下一节点 2026-09-19）
-- [[Trello/【NADA】|【NADA】]] — 1 项（⚠️ 148 天无动静）
+- [[Trello/【NADA】|【NADA】]] — 1 项（⚠️ 149 天无动静）
 - [[Trello/【Tencent】|【Tencent】]] — 1 项
 - [[Trello/目標設定|目標設定]] — 1 项
 - [[Trello/【GSC】S.T.A.L.K.E.R2PS5|【GSC】S.T.A.L.K.E.R2/PS5]] — 0 项
 
 ## TODO
 
-- [[Trello/To-Do|To-Do]] — 3 项（⚠️ 818 天无动静）
-- [[Trello/Doing|Doing]] — 2 项（⚠️ 818 天无动静）
+- [[Trello/To-Do|To-Do]] — 3 项（⚠️ 819 天无动静）
+- [[Trello/Doing|Doing]] — 2 项（⚠️ 819 天无动静）
