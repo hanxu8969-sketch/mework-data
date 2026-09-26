@@ -5,7 +5,7 @@ source: trello
 open_count: 4
 next_milestone: 2026-10-27
 last_activity: 2026-08-28
-synced_at: 2026-09-26
+synced_at: 2026-09-27
 ---
 
 
