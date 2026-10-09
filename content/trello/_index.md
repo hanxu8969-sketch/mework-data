@@ -1,20 +1,19 @@
 ---
 title: Trello 总览
 source: trello
-open_total: 27
+open_total: 26
 synced_at: 2026-10-09
 ---
 
 
 # Trello 总览
 
-未完成合计 **27** 项 · 同步于 2026-10-09
+未完成合计 **26** 项 · 同步于 2026-10-09
 
 ## 近期节点
 
 | 日期 | 事项 | 线 |
 |---|---|---|
-| 2026-09-19 | [ロリポップチェーンソー Back 2 Back](https://trello.com/c/AC8VoY67) | TGS2026 |
 | 2026-10-22 | [【PS5/NSW】ファーミングキャンプ（2026年10月22日発売）※アジアはNSWのみ](https://trello.com/c/SltcKBeA) | 【レイニーフロッグ】 |
 | 2026-10-27 | [【PS5】Farming Simulator 25: Beans & Alpacas Edition（2026年10月27日発売）](https://trello.com/c/RkhrDPpI) | 【Giants】 |
 | 2026-10-29 | [【NSW2】レゴ® ハリー・ポッター コレクション （2026年10月29日発売）](https://trello.com/c/8UFvAiqn) | 【ワーナーブラザーズ】 |
@@ -32,9 +31,9 @@ synced_at: 2026-10-09
 - [[Trello/【レイニーフロッグ】|【レイニーフロッグ】]] — 3 项（下一节点 2026-10-22）
 - [[Trello/【新規開拓】|【新規開拓】]] — 3 项
 - [[Trello/【ワーナーブラザーズ】|【ワーナーブラザーズ】]] — 2 项（下一节点 2026-10-29）
-- [[Trello/TGS2026|TGS2026]] — 2 项（下一节点 2026-09-19）
 - [[Trello/【NADA】|【NADA】]] — 1 项（⚠️ 172 天无动静）
 - [[Trello/【Tencent】|【Tencent】]] — 1 项
+- [[Trello/TGS2026|TGS2026]] — 1 项
 - [[Trello/目標設定|目標設定]] — 1 项
 - [[Trello/【GSC】S.T.A.L.K.E.R2PS5|【GSC】S.T.A.L.K.E.R2/PS5]] — 0 项
 
