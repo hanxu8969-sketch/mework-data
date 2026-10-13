@@ -4,7 +4,7 @@ board: ⋈仕事
 source: trello
 open_count: 4
 next_milestone: 2026-10-27
-last_activity: 2026-08-28
+last_activity: 2026-10-13
 synced_at: 2026-10-13
 ---
 
@@ -15,13 +15,13 @@ synced_at: 2026-10-13
 > 本文件由 MeWork 从 Trello 自动生成，**改这里不会回写 Trello**。
 
 ## 【PS5】Farming Simulator 25: Beans & Alpacas Edition（2026年10月27日発売）
-节点 **2026-10-27**（取自标题） · 最后活动 2026-05-27 · [卡片](https://trello.com/c/RkhrDPpI)
+节点 **2026-10-27**（取自标题） · 最后活动 2026-10-13 · [卡片](https://trello.com/c/RkhrDPpI)
 
 ## 【PS5】Farming Simulator 28（2027年11月27日）
-节点 **2027-11-27**（取自标题） · 最后活动 2026-08-18 · [卡片](https://trello.com/c/ykfZkcqd)
+节点 **2027-11-27**（取自标题） · 最后活动 2026-10-13 · [卡片](https://trello.com/c/ykfZkcqd)
 
 ## in terms of Steam region locks
-最后活动 2026-08-28 · [卡片](https://trello.com/c/meNDrkGi)
+最后活动 2026-10-13 · [卡片](https://trello.com/c/meNDrkGi)
 
 Dear Diana,
 
