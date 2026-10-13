@@ -2,13 +2,13 @@
 title: Trello 总览
 source: trello
 open_total: 25
-synced_at: 2026-10-13
+synced_at: 2026-10-14
 ---
 
 
 # Trello 总览
 
-未完成合计 **25** 项 · 同步于 2026-10-13
+未完成合计 **25** 项 · 同步于 2026-10-14
 
 ## 近期节点
 
@@ -38,5 +38,5 @@ synced_at: 2026-10-13
 
 ## TODO
 
-- [[Trello/To-Do|To-Do]] — 3 项（⚠️ 846 天无动静）
-- [[Trello/Doing|Doing]] — 2 项（⚠️ 846 天无动静）
+- [[Trello/To-Do|To-Do]] — 3 项（⚠️ 847 天无动静）
+- [[Trello/Doing|Doing]] — 2 项（⚠️ 847 天无动静）
