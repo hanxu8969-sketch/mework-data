@@ -34,7 +34,6 @@ synced_at: 2026-10-26
 - [[Trello/【Tencent】|【Tencent】]] — 1 项
 - [[Trello/目標設定|目標設定]] — 1 项
 - [[Trello/【GSC】S.T.A.L.K.E.R2PS5|【GSC】S.T.A.L.K.E.R2/PS5]] — 0 项
-- [[Trello/TGS2026|TGS2026]] — 0 项
 
 ## TODO
 
