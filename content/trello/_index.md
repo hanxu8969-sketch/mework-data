@@ -1,14 +1,14 @@
 ---
 title: Trello 总览
 source: trello
-open_total: 25
+open_total: 26
 synced_at: 2026-10-27
 ---
 
 
 # Trello 总览
 
-未完成合计 **25** 项 · 同步于 2026-10-27
+未完成合计 **26** 项 · 同步于 2026-10-27
 
 ## 近期节点
 
@@ -20,20 +20,20 @@ synced_at: 2026-10-27
 | 2026-11-26 | [【NSW、PS5】タクシーカオス２（2026年11月26日発売）※アジアはNSWのみ](https://trello.com/c/QuYdgDRJ) | 【レイニーフロッグ】 |
 | 2027-11-27 | [【PS5】Farming Simulator 28（2027年11月27日）](https://trello.com/c/ykfZkcqd) | 【Giants】 |
 
-## 生活
-
-- [[Trello/玄学命格需要去改善的|玄学/命格需要去改善的]] — 5 项（⚠️ 71 天无动静）
-
 ## ⋈仕事
 
+- [[Trello/【新規開拓】|【新規開拓】]] — 5 项
 - [[Trello/【Giants】|【Giants】]] — 4 项（下一节点 2026-10-27）
-- [[Trello/【新規開拓】|【新規開拓】]] — 4 项
 - [[Trello/【レイニーフロッグ】|【レイニーフロッグ】]] — 2 项（下一节点 2026-10-22）
 - [[Trello/【ワーナーブラザーズ】|【ワーナーブラザーズ】]] — 2 项（下一节点 2026-10-29）
 - [[Trello/【NADA】|【NADA】]] — 1 项
 - [[Trello/【Tencent】|【Tencent】]] — 1 项
 - [[Trello/目標設定|目標設定]] — 1 项
 - [[Trello/【GSC】S.T.A.L.K.E.R2PS5|【GSC】S.T.A.L.K.E.R2/PS5]] — 0 项
+
+## 生活
+
+- [[Trello/玄学命格需要去改善的|玄学/命格需要去改善的]] — 5 项（⚠️ 71 天无动静）
 
 ## TODO
 
