@@ -2,9 +2,9 @@
 title: 【Giants】
 board: ⋈仕事
 source: trello
-open_count: 4
-next_milestone: 2026-10-27
-last_activity: 2026-10-13
+open_count: 3
+next_milestone: 2027-11-27
+last_activity: 2026-11-09
 synced_at: 2026-11-09
 ---
 
@@ -13,9 +13,6 @@ synced_at: 2026-11-09
 
 > Trello · ⋈仕事 — [在 Trello 打开](https://trello.com/b/Kk3wmYNO)
 > 本文件由 MeWork 从 Trello 自动生成，**改这里不会回写 Trello**。
-
-## 【PS5】Farming Simulator 25: Beans & Alpacas Edition（2026年10月27日発売）
-节点 **2026-10-27**（取自标题） · 最后活动 2026-10-13 · [卡片](https://trello.com/c/RkhrDPpI)
 
 ## 【PS5】Farming Simulator 28（2027年11月27日）
 节点 **2027-11-27**（取自标题） · 最后活动 2026-10-13 · [卡片](https://trello.com/c/ykfZkcqd)
@@ -54,4 +51,4 @@ All the best
 
 ---
 
-_已完成 4 项（略）_
+_已完成 5 项（略）_
