@@ -1,30 +1,32 @@
 ---
 title: Trello 总览
 source: trello
-open_total: 23
+open_total: 24
 synced_at: 2026-11-19
 ---
 
 
 # Trello 总览
 
-未完成合计 **23** 项 · 同步于 2026-11-19
+未完成合计 **24** 项 · 同步于 2026-11-19
 
 ## 近期节点
 
 | 日期 | 事项 | 线 |
 |---|---|---|
 | 2026-11-26 | [【NSW、PS5】タクシーカオス２（2026年11月26日発売）※アジアはNSWのみ](https://trello.com/c/QuYdgDRJ) | 【レイニーフロッグ】 |
-| 2027-11-27 | [【PS5】Farming Simulator 28（2027年11月27日）](https://trello.com/c/ykfZkcqd) | 【Giants】 |
+| 2026-12-09 | [【PS5】Farming Simulator 28（2027年10月29日）](https://trello.com/c/ykfZkcqd) | 【Giants】 |
+| 2027-04-27 | [【PS5/NS2】Project Tricycle（2027年4月27日発売）](https://trello.com/c/F8BwasZL) | 【ワーナーブラザーズ】 |
+| 2027-06-30 | [WB過去タイトルの発売停止](https://trello.com/c/TCL2gyZX) | 【ワーナーブラザーズ】 |
 
 ## ⋈仕事
 
 - [[Trello/【新規開拓】|【新規開拓】]] — 5 项
-- [[Trello/【Giants】|【Giants】]] — 3 项（下一节点 2027-11-27）
+- [[Trello/【ワーナーブラザーズ】|【ワーナーブラザーズ】]] — 3 项（下一节点 2027-04-27）
+- [[Trello/【Giants】|【Giants】]] — 2 项（下一节点 2026-12-09）
 - [[Trello/【NADA】|【NADA】]] — 1 项
 - [[Trello/【Tencent】|【Tencent】]] — 1 项
 - [[Trello/【レイニーフロッグ】|【レイニーフロッグ】]] — 1 项（下一节点 2026-11-26）
-- [[Trello/【ワーナーブラザーズ】|【ワーナーブラザーズ】]] — 1 项
 - [[Trello/目標設定|目標設定]] — 1 项
 - [[Trello/【GSC】S.T.A.L.K.E.R2PS5|【GSC】S.T.A.L.K.E.R2/PS5]] — 0 项
 
